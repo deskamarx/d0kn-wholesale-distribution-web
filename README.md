@@ -56,6 +56,10 @@ The app is local-only. There is no backend, account system or cloud sync.
 
 Settings provides JSON backup, restore and sample-data reset. The service worker caches only the app shell; workspace records stay in localStorage on the device where they were created.
 
+## Android APK
+
+A signed, installable Android APK is included in the GitHub release for this repository. The native wrapper bundles the complete app locally, so no server is required. See `ANDROID.md` for package details, signing information, install instructions, and rebuild commands.
+
 ## Deployment
 
 GitHub Actions builds and deploys `dist/` on every push to `main`. Pages deployment uses the automatic `GITHUB_TOKEN`; no repository secrets are required.

@@ -1,0 +1,4 @@
+storeFile=keystore/d0kn-release.p12
+storePassword=CHANGE_ME
+keyAlias=d0kn-release
+keyPassword=CHANGE_ME
