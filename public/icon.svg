@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="D0K@N Global Distribution">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2443d8"/>
+      <stop offset="1" stop-color="#0d1733"/>
+    </linearGradient>
+    <linearGradient id="box" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9fb4ff"/>
+      <stop offset="1" stop-color="#5b7cff"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="176" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="16"/>
+  <path d="M80 208 256 120l176 88-176 88z" fill="url(#box)"/>
+  <path d="m80 208 176 88 176-88" fill="none" stroke="#e9edff" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M256 296v112l-96-48V248" fill="#172f9f" stroke="#e9edff" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M256 296v112l96-48V248" fill="#2443d8" stroke="#e9edff" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M128 152a176 176 0 0 1 256 0" fill="none" stroke="#7d97ff" stroke-width="14" stroke-linecap="round"/>
+  <text x="256" y="402" text-anchor="middle" font-family="Arial, sans-serif" font-size="58" font-weight="800" fill="#ffffff">D0K@N</text>
+</svg>

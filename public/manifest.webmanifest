@@ -1,0 +1,21 @@
+{
+  "name": "D0K@N Global Distribution — Wholesale & Import Command Center",
+  "short_name": "D0K@N Global",
+  "description": "China sourcing, import logistics, warehouse stock, wholesale orders, receivables, compliance, and intelligent operations for distribution teams.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f6fb",
+  "theme_color": "#14245c",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

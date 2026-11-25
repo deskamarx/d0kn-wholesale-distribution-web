@@ -1,0 +1,10 @@
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+export default defineConfig({
+  plugins: [react()],
+  base: "/d0kn-wholesale-distribution-web/",
+  server: {
+    port: 5173,
+  },
+});
