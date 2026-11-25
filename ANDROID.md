@@ -1,6 +1,6 @@
 # D0K@N Global Distribution — Android release
 
-The Android app is a native Capacitor wrapper around the complete local-first distribution workspace. All 16 modules, English/Bengali/Chinese language support, the intelligence engine, adaptive layouts, and local JSON backup/restore are bundled inside the APK. No web server is required to open or use the app.
+The Android app is a native Capacitor wrapper around the complete local-first distribution workspace. All 16 modules, English/Bengali/Chinese language support, native-language voice commands and field dictation, spoken summary reports, the intelligence engine, adaptive layouts, light/dark themes, and local JSON backup/restore are bundled inside the APK. No web server is required to open or use the app.
 
 ## Release details
 
@@ -8,20 +8,20 @@ The Android app is a native Capacitor wrapper around the complete local-first di
 | --- | --- |
 | App name | D0K@N Global |
 | Application ID / package | `io.d0kn.wholesale` |
-| Version | `2.0.0` (`versionCode 1`) |
+| Version | `2.1.0` (`versionCode 2`) |
 | Minimum Android | 7.0 / API 24 |
 | Target / compile SDK | Android 16 / API 36 |
 | Signing | APK Signature Scheme v2, RSA 2048 |
 | Certificate | `CN=D0K@N Global Distribution, OU=Operations, O=D0K@N, L=Dhaka, ST=Dhaka, C=BD` |
 | SHA-256 certificate digest | `377b68f99a07d9ae7330a281230b14e7aeec9e30ec2447e158143dd5996092d8` |
-| Built APK | `release/D0KN-Global-Distribution-v2.0.0-signed.apk` |
+| Built APK | `release/D0KN-Global-Distribution-v2.1.0-signed.apk` |
 
 ## Install
 
-Copy the APK to an Android 7+ device, allow **Install unknown apps** for the file manager/browser, and open it. Or connect the device/emulator and run:
+Copy the APK to an Android 7+ device, allow **Install unknown apps** for the file manager/browser, and open it. The first voice action asks for **Microphone** permission; speech is processed by the device's Android speech services, and the app does not upload recordings. Or connect the device/emulator and run:
 
 ```bash
-adb install -r release/D0KN-Global-Distribution-v2.0.0-signed.apk
+adb install -r release/D0KN-Global-Distribution-v2.1.0-signed.apk
 ```
 
 ## Rebuild the signed APK

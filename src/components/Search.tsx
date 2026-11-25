@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AppState } from "../types";
 import { useLanguage } from "../i18n";
 import { StatusChip } from "./Ui";
@@ -30,6 +30,15 @@ export default function Search({ state, setTab }: Props) {
   const { t } = useLanguage();
   const [query, setQuery] = useState("");
   const term = query.trim().toLowerCase();
+
+  useEffect(() => {
+    const onVoiceSearch = (event: Event) => {
+      const detail = (event as CustomEvent<{ query?: string }>).detail;
+      if (typeof detail?.query === "string") setQuery(detail.query);
+    };
+    window.addEventListener("d0kn-voice-search", onVoiceSearch);
+    return () => window.removeEventListener("d0kn-voice-search", onVoiceSearch);
+  }, []);
   const currency = state.company.defaultCurrency;
 
   const results = useMemo<ResultGroup[]>(() => {

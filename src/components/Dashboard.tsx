@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { AppState } from "../types";
 import { useLanguage } from "../i18n";
-import { Metric, ProgressBar, StatusChip } from "./Ui";
+import { Metric, ProgressBar, SpeakSummaryButton, StatusChip } from "./Ui";
 import {
   getHighRiskShipments,
   getInsights,
@@ -61,9 +61,12 @@ export default function Dashboard({ state, setTab }: Props) {
             <span>{t("Source country")}: {state.company.sourceCountry} → {t("Base country")}: {state.company.baseCountry}</span>
           </div>
         </div>
-        <button className="primary" type="button" onClick={() => setTab("intelligence")}>
-          {t("Open Intelligence")}
-        </button>
+        <div className="actions">
+          <SpeakSummaryButton module="dashboard" />
+          <button className="primary" type="button" onClick={() => setTab("intelligence")}>
+            {t("Open Intelligence")}
+          </button>
+        </div>
       </div>
 
       <div className="grid cols-3">

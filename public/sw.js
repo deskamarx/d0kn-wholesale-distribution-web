@@ -1,4 +1,4 @@
-const CACHE_NAME = "d0kn-distribution-shell-v2";
+const CACHE_NAME = "d0kn-distribution-shell-v3";
 const SCOPE = self.registration.scope;
 const SCOPE_PATH = new URL(SCOPE).pathname;
 const SHELL_URL = `${SCOPE}index.html`;

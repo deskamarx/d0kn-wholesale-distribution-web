@@ -14,7 +14,7 @@ import {
   getWholesaleInventoryValue,
 } from "../lib/intelligence";
 import { useLanguage } from "../i18n";
-import { BarList, Metric, ProgressBar, StatusChip } from "./Ui";
+import { BarList, Metric, ProgressBar, SpeakSummaryButton, StatusChip } from "./Ui";
 
 interface Props {
   state: AppState;
@@ -100,6 +100,7 @@ export default function Analytics({ state }: Props) {
           <h2>{t("Analytics")}</h2>
           <p>{t("Advanced commercial and operational intelligence across the wholesale network.")}</p>
         </div>
+        <SpeakSummaryButton module="analytics" />
       </div>
 
       <div className="grid cols-4">

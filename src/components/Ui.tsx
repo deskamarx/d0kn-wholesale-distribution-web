@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { statusTone } from "../lib/intelligence";
 import { titleCase } from "../lib/format";
+import { useLanguage } from "../i18n";
+import NavIcon from "./NavIcon";
 
 interface MetricProps {
   label: string;
@@ -64,5 +66,27 @@ export function BarList({ items, maxLabel }: BarProps) {
         </div>
       ))}
     </div>
+  );
+}
+
+interface SpeakSummaryButtonProps {
+  module: string;
+  label?: string;
+}
+
+export function SpeakSummaryButton({ module, label }: SpeakSummaryButtonProps) {
+  const { t } = useLanguage();
+  const text = label ?? t("Speak summary");
+  return (
+    <button
+      type="button"
+      className="summary-voice-action"
+      title={text}
+      aria-label={text}
+      onClick={() => window.dispatchEvent(new CustomEvent("d0kn-voice-summary", { detail: { module } }))}
+    >
+      <NavIcon name="volume" size={16} />
+      <span>{text}</span>
+    </button>
   );
 }

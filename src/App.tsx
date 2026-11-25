@@ -16,12 +16,27 @@ import Compliance from "./components/Compliance";
 import Search from "./components/Search";
 import Settings from "./components/Settings";
 import NavIcon, { type NavIconName } from "./components/NavIcon";
+import VoiceAssistant from "./components/VoiceAssistant";
 import { useDeviceProfile, type PreviewMode } from "./hooks/useDeviceProfile";
 import { LANGUAGE_NAMES, useLanguage, type Language } from "./i18n";
 import { initialState } from "./seed";
 import type { AppState } from "./types";
 
 const STORAGE_KEY = "d0kn-distribution-v1";
+const THEME_KEY = "d0kn-distribution-theme-v1";
+
+type Theme = "light" | "dark";
+
+function loadTheme(): Theme {
+  try {
+    const value = window.localStorage.getItem(THEME_KEY);
+    if (value === "light" || value === "dark") return value;
+    if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) return "dark";
+  } catch {
+    // Ignore unavailable storage or media queries.
+  }
+  return "light";
+}
 
 interface NavItem {
   id: string;
@@ -106,6 +121,8 @@ export default function App() {
   const [state, setState] = useState<AppState>(loadState);
   const [tab, setTabState] = useState<string>(tabFromHash);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [theme, setTheme] = useState<Theme>(loadTheme);
   const { device, previewOverride, setPreviewOverride } = useDeviceProfile();
   const { language, setLanguage, t } = useLanguage();
 
@@ -121,6 +138,11 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
 
   useEffect(() => {
     document.title = t("App title");
@@ -290,6 +312,34 @@ export default function App() {
               </select>
             </label>
 
+            <button
+              className="icon-button command-button"
+              type="button"
+              onClick={() => window.dispatchEvent(new Event("d0kn-voice-summary"))}
+              aria-label={t("Speak summary")}
+              title={t("Speak summary")}
+            >
+              <NavIcon name="volume" size={18} />
+            </button>
+            <button
+              className="icon-button voice-button"
+              type="button"
+              onClick={() => setVoiceOpen(!voiceOpen)}
+              aria-label={t("Voice control")}
+              title={t("Voice control")}
+              aria-expanded={voiceOpen}
+            >
+              <NavIcon name="mic" size={18} />
+            </button>
+            <button
+              className="icon-button theme-button"
+              type="button"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label={theme === "dark" ? t("Light theme") : t("Dark theme")}
+              title={t("Toggle color theme")}
+            >
+              <NavIcon name={theme === "dark" ? "sun" : "moon"} size={18} />
+            </button>
             <button className="icon-button" type="button" onClick={() => setTab("search")} aria-label={t("Open search")}>
               <NavIcon name="search" size={18} />
             </button>
@@ -360,6 +410,14 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <VoiceAssistant
+        state={state}
+        tab={tab}
+        setTab={setTab}
+        open={voiceOpen}
+        setOpen={setVoiceOpen}
+      />
     </div>
   );
 }

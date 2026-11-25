@@ -18,7 +18,12 @@ export type NavIconName =
   | "search"
   | "settings"
   | "more"
-  | "device";
+  | "device"
+  | "mic"
+  | "volume"
+  | "sun"
+  | "moon"
+  | "stop";
 
 interface Props {
   name: NavIconName | string;
@@ -168,6 +173,31 @@ function paths(name: string): JSX.Element {
           <path d="M10 18h4" />
         </>
       );
+    case "mic":
+      return (
+        <>
+          <rect x="9" y="2" width="6" height="12" rx="3" />
+          <path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8" />
+        </>
+      );
+    case "volume":
+      return (
+        <>
+          <path d="M4 9v6h4l5 4V5L8 9z" />
+          <path d="M17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11" />
+        </>
+      );
+    case "sun":
+      return (
+        <>
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+        </>
+      );
+    case "moon":
+      return <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />;
+    case "stop":
+      return <rect x="6" y="6" width="12" height="12" rx="2" />;
     default:
       return <circle cx="12" cy="12" r="8" />;
   }

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { setFormatLanguage } from "./lib/format";
 import { bnExtra, zhExtra } from "./i18n-extra";
+import { voiceBn, voiceZh } from "./i18n-voice";
 
 export type Language = "en" | "bn" | "zh";
 
@@ -319,6 +320,7 @@ const bn: Record<string, string> = {
   "No critical stock, shipment, compliance, or collections exceptions detected.": "কোনো গুরুতর স্টক, শিপমেন্ট, সম্মতি বা আদায় সংক্রান্ত সমস্যা পাওয়া যায়নি।",
   "Continue monitoring the command center for new signals.": "নতুন সংকেতের জন্য কমান্ড সেন্টার পর্যবেক্ষণ চালিয়ে যান।",
   ...bnExtra,
+  ...voiceBn,
 };
 
 const zh: Record<string, string> = {
@@ -626,6 +628,7 @@ const zh: Record<string, string> = {
   "No critical stock, shipment, compliance, or collections exceptions detected.": "未检测到严重的库存、货运、合规或催收异常。",
   "Continue monitoring the command center for new signals.": "请继续通过指挥中心监控新信号。",
   ...zhExtra,
+  ...voiceZh,
 };
 
 const dictionaries: Record<Language, Record<string, string>> = { en, bn, zh };

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { AppState } from "../types";
 import { useLanguage } from "../i18n";
-import { Metric, ProgressBar, StatusChip } from "./Ui";
+import { Metric, ProgressBar, SpeakSummaryButton, StatusChip } from "./Ui";
 import {
   getCustomerExposure,
   getForecast,
@@ -116,7 +116,10 @@ export default function Intelligence({ state, setTab }: Props) {
           <h2>{t("Intelligence Engine")}</h2>
           <p>{t("Local rule-based signals across sourcing, logistics, inventory, credit, and compliance.")}</p>
         </div>
-        <span className="chip success">{t("No external AI service")}</span>
+        <div className="actions">
+          <SpeakSummaryButton module="intelligence" />
+          <span className="chip success">{t("No external AI service")}</span>
+        </div>
       </div>
 
       <div className="card">
