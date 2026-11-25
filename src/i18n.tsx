@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { setFormatLanguage } from "./lib/format";
 import { bnExtra, zhExtra } from "./i18n-extra";
 import { voiceBn, voiceZh } from "./i18n-voice";
@@ -668,9 +668,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return initial;
   });
 
+  const setLanguage = useCallback((next: Language) => {
+    // Formatting helpers read a module-level locale, so update it before React
+    // re-renders with the new language to avoid one frame of stale locales.
+    setFormatLanguage(next);
+    setLanguageState(next);
+  }, []);
+
   useEffect(() => {
     document.documentElement.lang = language === "bn" ? "bn" : language === "zh" ? "zh-CN" : "en";
-    setFormatLanguage(language);
     try {
       window.localStorage.setItem(LANGUAGE_KEY, language);
     } catch {
@@ -681,10 +687,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const value = useMemo<LanguageContextValue>(
     () => ({
       language,
-      setLanguage: setLanguageState,
+      setLanguage,
       t: (key, vars) => translate(language, key, vars),
     }),
-    [language]
+    [language, setLanguage]
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;

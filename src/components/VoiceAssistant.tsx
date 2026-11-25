@@ -128,7 +128,7 @@ export default function VoiceAssistant({ state, tab, setTab, open, setOpen }: Pr
   const speakText = useCallback(
     async (text: string, lang: SpeechLanguage) => {
       if (!synthesisSupported) {
-        showFeedback(t("Speech synthesis is not available in this browser."));
+        showFeedback(t("Speech engine unavailable"));
         setStatus("idle");
         return;
       }
@@ -137,7 +137,7 @@ export default function VoiceAssistant({ state, tab, setTab, open, setOpen }: Pr
       try {
         await speakAloud(text, VOICE_LOCALES[lang]);
       } catch {
-        showFeedback(t("Speech synthesis is not available in this browser."));
+        showFeedback(t("Speech engine unavailable"));
       } finally {
         setStatus("idle");
       }
@@ -275,6 +275,12 @@ export default function VoiceAssistant({ state, tab, setTab, open, setOpen }: Pr
       recognition.onerror = (event) => {
         if (event.error === "not-allowed" || event.error === "service-not-allowed") {
           showFeedback(t("Microphone permission was denied."));
+          setStatus("error");
+          retryIndexRef.current = retryQueueRef.current.length;
+          return;
+        }
+        if (event.error === "service-unavailable") {
+          showFeedback(t("Speech engine unavailable"));
           setStatus("error");
           retryIndexRef.current = retryQueueRef.current.length;
           return;

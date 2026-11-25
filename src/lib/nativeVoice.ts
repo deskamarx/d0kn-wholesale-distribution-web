@@ -112,7 +112,7 @@ class CapacitorSpeechRecognition implements SpeechRecognitionLike {
       }
       const { available } = await NativeSpeechRecognition.available();
       if (!available) {
-        this.emitError({ error: "service-not-allowed" });
+        this.emitError({ error: "service-unavailable" });
         return;
       }
 
