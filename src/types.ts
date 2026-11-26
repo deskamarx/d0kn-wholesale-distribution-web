@@ -213,6 +213,8 @@ export interface ActivityItem {
   tone: "info" | "success" | "warning" | "danger";
 }
 
+import type { Phase2Extras } from "./lib/extras";
+
 export interface AppState {
   company: CompanyProfile;
   products: Product[];
@@ -228,4 +230,5 @@ export interface AppState {
   payments: Payment[];
   compliance: ComplianceRecord[];
   activity: ActivityItem[];
+  extras: Phase2Extras;
 }

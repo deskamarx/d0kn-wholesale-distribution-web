@@ -1,11 +1,14 @@
 {
   "name": "d0kn-wholesale-distribution-web",
   "private": true,
-  "version": "2.1.1",
+  "version": "2.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test": "node scripts/test.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "audit:check": "npm audit --omit=dev --audit-level=high",
     "build:android": "tsc -b && vite build --base=./ && npx cap sync android",
     "apk:release": "npm run build:android && cd android && gradlew.bat assembleRelease",
     "assets:android": "node generate-assets.mjs && npx capacitor-assets generate --android",

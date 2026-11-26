@@ -4,10 +4,13 @@ import App from "./App";
 import { LanguageProvider, useLanguage } from "./i18n";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ToastProvider } from "./components/Feedback";
+import { installDiagnostics } from "./lib/diagnostics";
+import { useEffect } from "react";
 import "./styles.css";
 
 function Root() {
   const { t } = useLanguage();
+  useEffect(() => installDiagnostics(), []);
   return (
     <ErrorBoundary
       labels={{

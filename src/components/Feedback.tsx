@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLanguage } from "../i18n";
 
-type ToastTone = "info" | "success" | "danger";
+type ToastTone = "info" | "success" | "danger" | "warning";
 
 interface ToastAction {
   label: string;

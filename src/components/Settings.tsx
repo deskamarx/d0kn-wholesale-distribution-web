@@ -5,6 +5,8 @@ import type { AppState } from "../types";
 import type { DeviceDisplayInfo, PreviewMode } from "../hooks/useDeviceProfile";
 import { LANGUAGE_NAMES, useLanguage } from "../i18n";
 import { useToast } from "./Feedback";
+import SettingsTools from "./phase2/SettingsTools";
+import { assertSchema, migrateState, remapExtras } from "../lib/migration";
 import {
   ACCENT_OPTIONS,
   APK_VERSION,
@@ -12,43 +14,13 @@ import {
   DENSITY_OPTIONS,
   FONT_SCALE_OPTIONS,
   PHASE1_CHANGES,
+  PHASE2_CHANGES,
   type Preferences,
 } from "../lib/preferences";
 
 const STORAGE_KEY = "d0kn-distribution-v1";
 const PREVIEW_KEY = "d0kn-distribution-preview-v1";
 const CONFLICT_MESSAGE = "Discard unsaved changes and load this scenario?";
-
-const BACKUP_ARRAY_KEYS = [
-  "products",
-  "suppliers",
-  "imports",
-  "shipments",
-  "warehouses",
-  "movements",
-  "customers",
-  "quotations",
-  "orders",
-  "invoices",
-  "payments",
-  "compliance",
-  "activity",
-] as const;
-
-function isValidBackup(value: unknown): value is AppState {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const parsed = value as Record<string, unknown>;
-  const company = parsed.company;
-  if (!company || typeof company !== "object" || Array.isArray(company)) return false;
-  for (const key of Object.keys(initialState.company) as Array<keyof typeof initialState.company>) {
-    const field = (company as Record<string, unknown>)[key];
-    if (field !== undefined && typeof field !== "string") return false;
-  }
-  for (const key of BACKUP_ARRAY_KEYS) {
-    if (parsed[key] !== undefined && !Array.isArray(parsed[key])) return false;
-  }
-  return true;
-}
 
 interface Props {
   state: AppState;
@@ -61,6 +33,8 @@ interface Props {
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
   onInstall: () => void;
+  setTab?: (tab: string) => void;
+  shareText?: string;
 }
 
 const PREVIEW_OPTIONS: Array<{ value: PreviewMode; label: string }> = [
@@ -127,9 +101,13 @@ function buildScenario(kind: Scenario): AppState {
   const supplierIds = new Map<string, string>();
   const productIds = new Map<string, string>();
   const importIds = new Map<string, string>();
+  const shipmentIds = new Map<string, string>();
   const customerIds = new Map<string, string>();
   const orderIds = new Map<string, string>();
   const invoiceIds = new Map<string, string>();
+  const quotationIds = new Map<string, string>();
+  const paymentIds = new Map<string, string>();
+  const complianceIds = new Map<string, string>();
   const unmapped = () => new Map<string, string>();
 
   const suppliers = repeatMapped(initialState.suppliers, 24, "SUP", supplierIds, (source, index, id) => ({
@@ -153,7 +131,7 @@ function buildScenario(kind: Scenario): AppState {
       productId: productIds.get(item.productId) ?? item.productId,
     })),
   }));
-  const shipments = repeatMapped(initialState.shipments, 40, "SHP", unmapped(), (source, index, id) => ({
+  const shipments = repeatMapped(initialState.shipments, 40, "SHP", shipmentIds, (source, index, id) => ({
     ...source,
     id,
     reference: `${source.reference}-S${index + 1}`,
@@ -172,7 +150,7 @@ function buildScenario(kind: Scenario): AppState {
     company: `${source.company} ${index + 1}`,
     email: source.email ? `${id.toLowerCase()}@example.test` : source.email,
   }));
-  const quotations = repeatMapped(initialState.quotations, 60, "QUO", unmapped(), (source, index, id) => ({
+  const quotations = repeatMapped(initialState.quotations, 60, "QUO", quotationIds, (source, index, id) => ({
     ...source,
     id,
     number: `${source.number}-S${index + 1}`,
@@ -199,13 +177,13 @@ function buildScenario(kind: Scenario): AppState {
     customerId: customerIds.get(source.customerId) ?? source.customerId,
     orderId: orderIds.get(source.orderId) ?? source.orderId,
   }));
-  const payments = repeatMapped(initialState.payments, 90, "PAY", unmapped(), (source, index, id) => ({
+  const payments = repeatMapped(initialState.payments, 90, "PAY", paymentIds, (source, index, id) => ({
     ...source,
     id,
     invoiceId: invoiceIds.get(source.invoiceId) ?? source.invoiceId,
     reference: `${source.reference || "PAY"}-S${index + 1}`,
   }));
-  const compliance = repeatMapped(initialState.compliance, 40, "COM", unmapped(), (source, index, id) => ({
+  const compliance = repeatMapped(initialState.compliance, 40, "COM", complianceIds, (source, index, id) => ({
     ...source,
     id,
     reference: `${source.reference}-S${index + 1}`,
@@ -224,7 +202,7 @@ function buildScenario(kind: Scenario): AppState {
     timestamp: new Date(Date.now() - index * 3_600_000).toISOString(),
   }));
 
-  return {
+  const scenario: AppState = {
     ...initialState,
     suppliers,
     products,
@@ -240,6 +218,18 @@ function buildScenario(kind: Scenario): AppState {
     compliance,
     activity,
   };
+  return remapExtras(scenario, {
+    supplierIds,
+    productIds,
+    importIds,
+    shipmentIds,
+    customerIds,
+    orderIds,
+    invoiceIds,
+    quotationIds,
+    paymentIds,
+    complianceIds,
+  });
 }
 
 export default function Settings({
@@ -253,6 +243,8 @@ export default function Settings({
   theme,
   setTheme,
   onInstall,
+  setTab,
+  shareText,
 }: Props) {
   const { t, language, setLanguage } = useLanguage();
   const { notify } = useToast();
@@ -260,9 +252,14 @@ export default function Settings({
   const [exportSection, setExportSection] = useState<keyof AppState>("company");
   const [scenario, setScenario] = useState<Scenario>("standard");
   const languageCodes = Object.keys(LANGUAGE_NAMES) as Array<keyof typeof LANGUAGE_NAMES>;
+  const navigate = setTab ?? ((tab: string) => {
+    window.location.hash = `#${tab}`;
+  });
+  const receivedShare = shareText ?? new URLSearchParams(window.location.search).get("share") ?? undefined;
 
   const exportData = () => {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const backup: AppState = { ...state, extras: state.extras };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -289,13 +286,10 @@ export default function Settings({
 
   const importData = () => {
     try {
-      const parsed: unknown = JSON.parse(importText);
-      if (!isValidBackup(parsed)) throw new Error(t("Invalid backup"));
-      setState({
-        ...initialState,
-        ...parsed,
-        company: { ...initialState.company, ...parsed.company },
-      });
+      const migrated = migrateState(JSON.parse(importText) as unknown);
+      if (!migrated) throw new Error(t("Invalid backup"));
+      assertSchema(migrated);
+      setState(migrated);
       setImportText("");
       notify(t("Restore complete"), { tone: "success" });
     } catch {
@@ -602,6 +596,16 @@ export default function Settings({
         </div>
       </div>
 
+      <SettingsTools
+        module="settings"
+        state={state}
+        setState={setState}
+        setTab={navigate}
+        preferences={preferences}
+        setPreferences={setPreferences}
+        shareText={receivedShare}
+      />
+
       <div className="card">
         <div className="section-title">
           <h3>{t("Changelog")}</h3>
@@ -609,6 +613,10 @@ export default function Settings({
         </div>
         <ul className="changelog-list">
           {PHASE1_CHANGES.map((change) => <li key={change}>{t(change)}</li>)}
+        </ul>
+        <h4>{t("Phase 2")}</h4>
+        <ul className="changelog-list">
+          {PHASE2_CHANGES.map((change) => <li key={change}>{t(change)}</li>)}
         </ul>
       </div>
     </>

@@ -20,10 +20,16 @@ import NavIcon, { type NavIconName } from "./components/NavIcon";
 import VoiceAssistant from "./components/VoiceAssistant";
 import DataLists from "./components/DataLists";
 import { InstallPrompt, ModuleGuideDialog, ShortcutDialog, WhatsNewDialog } from "./components/Overlays";
+import QuickAdd from "./components/QuickAdd";
+import NextBestBanner from "./components/NextBestBanner";
+import { DateRangeControl, OfflineBadge } from "./components/Phase2Shell";
+import Phase2Tools from "./components/phase2/Phase2Tools";
+import LockScreen from "./components/LockScreen";
 import { useDeviceProfile, type PreviewMode } from "./hooks/useDeviceProfile";
 import { LANGUAGE_NAMES, useLanguage, type Language } from "./i18n";
 import { applyPreferences, CHANGELOG_ID, loadPreferences, savePreferences, type Preferences } from "./lib/preferences";
-import { initialState } from "./seed";
+import { assertSchema, loadMigratedState } from "./lib/migration";
+import { isLockEnabled } from "./lib/security";
 import type { AppState } from "./types";
 
 const STORAGE_KEY = "d0kn-distribution-v1";
@@ -187,19 +193,16 @@ const SHORTCUT_MODULES = [
   "imports", "shipments", "warehouse", "customers", "quotations",
 ];
 
-function loadState(): AppState {
+function launchContext(): { focusRecord?: string; shareText?: string } {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as AppState;
-      if (parsed && parsed.company && Array.isArray(parsed.products) && Array.isArray(parsed.orders)) {
-        return { ...initialState, ...parsed };
-      }
-    }
+    const params = new URLSearchParams(window.location.search);
+    return {
+      focusRecord: params.get("record") ?? undefined,
+      shareText: params.get("share") ?? params.get("title") ?? params.get("url") ?? undefined,
+    };
   } catch {
-    // Ignore malformed local state and start fresh.
+    return {};
   }
-  return initialState;
 }
 
 function tabFromHash(): string {
@@ -221,7 +224,11 @@ function BootSkeleton() {
 }
 
 export default function App() {
-  const [state, setState] = useState<AppState>(loadState);
+  const [state, setState] = useState<AppState>(loadMigratedState);
+  const initialLaunch = useRef(launchContext());
+  const [focusRecord, setFocusRecord] = useState<string | undefined>(initialLaunch.current.focusRecord);
+  const [shareText, setShareText] = useState<string | undefined>(initialLaunch.current.shareText);
+  const [locked, setLocked] = useState(() => isLockEnabled());
   const [tab, setTabState] = useState<string>(tabFromHash);
   const [moreOpen, setMoreOpen] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
@@ -260,7 +267,17 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    assertSchema(state);
   }, [state]);
+
+  useEffect(() => {
+    const onFocus = (event: Event) => {
+      const detail = (event as CustomEvent<{ id?: string; module?: string }>).detail;
+      setFocusRecord(detail?.id ?? undefined);
+    };
+    window.addEventListener("d0kn-focus-record", onFocus);
+    return () => window.removeEventListener("d0kn-focus-record", onFocus);
+  }, []);
 
   useEffect(() => {
     applyTheme(theme);
@@ -296,7 +313,12 @@ export default function App() {
         const parsed = new URL(url, window.location.origin);
         const fromHash = parsed.hash.replace(/^#/, "");
         const fromPath = parsed.pathname.split("/").filter(Boolean).pop() ?? "";
-        const id = decodeURIComponent(fromHash || fromPath);
+        const queryModule = parsed.searchParams.get("module") ?? "";
+        const id = decodeURIComponent(queryModule || fromHash || fromPath);
+        const record = parsed.searchParams.get("record");
+        const share = parsed.searchParams.get("share") ?? parsed.searchParams.get("title") ?? parsed.searchParams.get("url");
+        if (record) setFocusRecord(record);
+        if (share) setShareText(share);
         if (ALL_NAV_ITEMS.some((item) => item.id === id)) setTab(id);
       } catch {
         // Ignore malformed deep-link URLs.
@@ -376,6 +398,17 @@ export default function App() {
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  useEffect(() => {
+    const openGuide = () => setGuideOpen(true);
+    const openShortcuts = () => setShortcutsOpen(true);
+    window.addEventListener("d0kn-open-guide", openGuide);
+    window.addEventListener("d0kn-open-shortcuts", openShortcuts);
+    return () => {
+      window.removeEventListener("d0kn-open-guide", openGuide);
+      window.removeEventListener("d0kn-open-shortcuts", openShortcuts);
+    };
   }, []);
 
   useEffect(() => {
@@ -459,6 +492,8 @@ export default function App() {
             theme={theme}
             setTheme={setTheme}
             onInstall={handleInstall}
+            setTab={setTab}
+            shareText={shareText}
           />
         );
       case "dashboard":
@@ -597,7 +632,7 @@ export default function App() {
             <NavIcon name="pin" size={16} />
             <span>{preferences.favoriteModules.includes(tab) ? t("Unpin this module") : t("Pin this module")}</span>
           </button>
-          <div className="sidebar-version">{t("Distribution OS v2.1 · local workspace")}</div>
+          <div className="sidebar-version">{t("Distribution OS v2.2 · local workspace")}</div>
         </div>
       </aside>
 
@@ -619,6 +654,9 @@ export default function App() {
           </div>
 
           <div className="topbar-actions">
+            <QuickAdd state={state} setState={setState} setTab={setTab} />
+            <OfflineBadge state={state} />
+            <DateRangeControl preferences={preferences} setPreferences={setPreferences} />
             <span
               className="device-chip"
               title={`${t("Detected")}: ${t(device.detectedLabel)} · ${device.userAgentHint} · ${device.width}×${device.height}`}
@@ -696,9 +734,26 @@ export default function App() {
           </div>
         </header>
 
-        <main className="main" id="main-content" tabIndex={-1}>{booting ? <BootSkeleton /> : renderTab()}</main>
+        <main className="main" id="main-content" tabIndex={-1}>
+          {booting ? <BootSkeleton /> : (
+            <>
+              <NextBestBanner state={state} setTab={setTab} />
+              {renderTab()}
+              <Phase2Tools
+                module={tab}
+                state={state}
+                setState={setState}
+                setTab={setTab}
+                preferences={preferences}
+                setPreferences={setPreferences}
+                focusRecord={focusRecord}
+                shareText={shareText}
+              />
+            </>
+          )}
+        </main>
 
-        <footer className="app-footer">{t("D0K@N Global Distribution · intelligent wholesale operations · v2.1")}</footer>
+        <footer className="app-footer">{t("D0K@N Global Distribution · intelligent wholesale operations · v2.2")}</footer>
       </div>
 
       <nav className="mobile-bottom-nav" aria-label={t("Mobile navigation")}>
@@ -759,6 +814,17 @@ export default function App() {
             ))}
           </div>
         </div>
+      )}
+
+      {locked && (
+        <LockScreen
+          onUnlock={() => setLocked(false)}
+          onReset={() => {
+            try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+            setState(loadMigratedState());
+            setLocked(false);
+          }}
+        />
       )}
 
       <DataLists state={state} />

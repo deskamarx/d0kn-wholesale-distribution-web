@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useLanguage } from "../i18n";
-import { APP_VERSION, CHANGELOG_ID, PHASE1_CHANGES } from "../lib/preferences";
+import { APP_VERSION, CHANGELOG_ID, PHASE2_CHANGES } from "../lib/preferences";
 
 interface DialogProps {
   open: boolean;
@@ -9,7 +9,7 @@ interface DialogProps {
   children: ReactNode;
 }
 
-function Dialog({ open, onClose, title, children }: DialogProps) {
+export function Dialog({ open, onClose, title, children }: DialogProps) {
   const { t } = useLanguage();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -70,9 +70,9 @@ export function WhatsNewDialog({ open, onClose }: { open: boolean; onClose: () =
   const { t } = useLanguage();
   return (
     <Dialog open={open} onClose={onClose} title={t("What's new in {version}", { version: APP_VERSION })}>
-      <p className="muted-text">{t("Phase 1 polish is now live in this browser.")}</p>
+      <p className="muted-text">{t("Phase 2 adds deeper workflows while your local data and signed APK stay untouched.")}</p>
       <ul className="changelog-list">
-        {PHASE1_CHANGES.map((change) => <li key={change}>{t(change)}</li>)}
+        {PHASE2_CHANGES.map((change) => <li key={change}>{t(change)}</li>)}
       </ul>
       <div className="actions">
         <button className="primary" type="button" onClick={onClose}>{t("Got it")}</button>

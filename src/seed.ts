@@ -1,4 +1,5 @@
 import type { AppState, OrderLine } from "./types";
+import { createExtras } from "./lib/extras";
 
 const line = (productId: string, quantity: number, unitPrice: number, discountPercent = 0): OrderLine => ({
   productId,
@@ -337,4 +338,5 @@ export const initialState: AppState = {
     { id: "ACT-005", timestamp: "2026-11-23T14:30:00", title: "Supplier audit due", detail: "Quality audit for Shenzhen Nova Mobile Parts expires soon.", tone: "warning" },
     { id: "ACT-006", timestamp: "2026-11-22T10:12:00", title: "Stock adjustment recorded", detail: "-25 units of Battery Cell 5000mAh at WH-LAX01.", tone: "info" },
   ],
+  extras: createExtras(),
 };

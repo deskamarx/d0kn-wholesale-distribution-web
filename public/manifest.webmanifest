@@ -10,6 +10,15 @@
   "background_color": "#f4f6fb",
   "theme_color": "#14245c",
   "categories": ["business", "productivity"],
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "share",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "./icon.svg",

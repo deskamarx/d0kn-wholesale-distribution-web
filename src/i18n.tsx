@@ -3,6 +3,7 @@ import { setFormatLanguage } from "./lib/format";
 import { bnExtra, zhExtra } from "./i18n-extra";
 import { voiceBn, voiceZh } from "./i18n-voice";
 import { phase1Bn, phase1Zh } from "./i18n-phase1";
+import { phase2Bn, phase2Zh } from "./i18n-phase2";
 
 export type Language = "en" | "bn" | "zh";
 
@@ -325,6 +326,7 @@ const bn: Record<string, string> = {
   ...bnExtra,
   ...voiceBn,
   ...phase1Bn,
+  ...phase2Bn,
 };
 
 const zh: Record<string, string> = {
@@ -634,6 +636,7 @@ const zh: Record<string, string> = {
   ...zhExtra,
   ...voiceZh,
   ...phase1Zh,
+  ...phase2Zh,
 };
 
 const dictionaries: Record<Language, Record<string, string>> = { en, bn, zh };

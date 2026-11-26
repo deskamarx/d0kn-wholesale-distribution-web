@@ -1,4 +1,6 @@
-# Phase 1 release checklist
+# Release checklist — Phase 2 web (`2.2.0`)
+
+Phase 1 remains live at `2.1.1` and the signed APK stays at `2.1.0`. Phase 2 is a web-only release; do not rebuild or replace the APK unless the owner explicitly asks for a new signed Android build.
 
 ## Web deploy verification
 
@@ -33,3 +35,14 @@ Workspace data is local only: web `localStorage` and Android WebView storage are
 ## Phase independence
 
 Phase 1 web and release plumbing (CI, Pages deploy, deep-link registration, and this checklist) does not depend on Phase 2. The Android workflow is manual/tag-gated (`v*-android`) for this app only, and it neither deploys the web app nor touches the electronics app. Phase 2 can use its own branch, tags, and release checks; do not trigger the Phase 1 Android tag for unrelated work.
+
+## Phase 2 verification
+
+1. Run `npm test` (parser, migration, sort, CSV, and period unit checks), `npm run build && npm run smoke`, and `npm run audit:check` locally. CI runs the unit checks before the Pages build; the weekly audit reports on production dependencies only.
+2. Confirm all 16 hash routes render in English, Bengali, and Chinese, in light and dark themes, and at desktop/mobile widths. Check the record explorer sorting, saved views, bulk export, quick add, and voice summary on at least one module per domain.
+3. Confirm the service worker cache is `d0kn-distribution-shell-v5` and that a hard refresh serves the new asset hashes. Old caches delete themselves on activation.
+4. Confirm the APK file hash is unchanged: `B9ACDE4E6607BD5DC523ECD3B77C8AA7797B725061BAF8169EF5D6A7F83FCAB8`, size `4,605,979`.
+
+## Rollback
+
+If a Phase 2 deploy regresses, revert the web commit on `main` and let the Pages deploy workflow publish the previous `2.1.1` assets. Existing browser data is forward-compatible: Phase 2 migrates old state by filling `extras` defaults, and Phase 1 ignores `extras`, so no data restore is required for a web-only rollback. Never roll back by publishing an unsigned APK.
