@@ -149,10 +149,10 @@ export default function Imports({ state, setState }: Props) {
           <p className="muted-text">{t("Set the commercial terms first, then add the product lines for landed cost calculation.")}</p>
 
           <div className="field-row">
-            <div className="field"><label>{t("Reference")}</label><input value={form.reference} onChange={(event) => patch({ reference: event.target.value })} placeholder={t("IMP-2026-014")} /></div>
+            <div className="field"><label>{t("Reference")}</label><input aria-label={t("Reference")} value={form.reference} onChange={(event) => patch({ reference: event.target.value })} placeholder={t("IMP-2026-014")} /></div>
             <div className="field">
               <label>{t("Supplier")}</label>
-              <select value={form.supplierId} onChange={(event) => patch({ supplierId: event.target.value })}>
+              <select aria-label={t("Supplier")} value={form.supplierId} onChange={(event) => patch({ supplierId: event.target.value })}>
                 <option value="">{t("Unassigned")}</option>
                 {state.suppliers.map((supplier) => (
                   <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
@@ -161,19 +161,19 @@ export default function Imports({ state, setState }: Props) {
             </div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Order date")}</label><input type="date" value={form.orderDate} onChange={(event) => patch({ orderDate: event.target.value })} /></div>
-            <div className="field"><label>{t("ETA")}</label><input type="date" value={form.eta} onChange={(event) => patch({ eta: event.target.value })} /></div>
+            <div className="field"><label>{t("Order date")}</label><input aria-label={t("Order date")} type="date" value={form.orderDate} onChange={(event) => patch({ orderDate: event.target.value })} /></div>
+            <div className="field"><label>{t("ETA")}</label><input aria-label={t("ETA")} type="date" value={form.eta} onChange={(event) => patch({ eta: event.target.value })} /></div>
           </div>
           <div className="field-row">
             <div className="field">
               <label>{t("Status")}</label>
-              <select value={form.status} onChange={(event) => patch({ status: event.target.value as Status })}>
+              <select aria-label={t("Status")} value={form.status} onChange={(event) => patch({ status: event.target.value as Status })}>
                 {IMPORT_STATUSES.map((status) => <option key={status} value={status}>{t(status)}</option>)}
               </select>
             </div>
             <div className="field">
               <label>{t("Customs status")}</label>
-              <select value={form.customsStatus} onChange={(event) => patch({ customsStatus: event.target.value as Status })}>
+              <select aria-label={t("Customs status")} value={form.customsStatus} onChange={(event) => patch({ customsStatus: event.target.value as Status })}>
                 {CUSTOMS_STATUSES.map((status) => <option key={status} value={status}>{t(status)}</option>)}
               </select>
             </div>
@@ -181,21 +181,21 @@ export default function Imports({ state, setState }: Props) {
           <div className="field-row">
             <div className="field">
               <label>{t("Currency")}</label>
-              <select value={form.currency} onChange={(event) => patch({ currency: event.target.value })}>
+              <select aria-label={t("Currency")} value={form.currency} onChange={(event) => patch({ currency: event.target.value })}>
                 {CURRENCIES.map((code) => <option key={code} value={code}>{code}</option>)}
               </select>
             </div>
-            <div className="field"><label>{t("Exchange rate")}</label><input type="number" min="0" step="0.01" value={form.exchangeRate} onChange={(event) => patch({ exchangeRate: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Exchange rate")}</label><input aria-label={t("Exchange rate")} type="number" min="0" step="0.01" value={form.exchangeRate} onChange={(event) => patch({ exchangeRate: Number(event.target.value) })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Duty %")}</label><input type="number" min="0" step="0.1" value={form.dutyPercent} onChange={(event) => patch({ dutyPercent: Number(event.target.value) })} /></div>
-            <div className="field"><label>{t("Freight cost")}</label><input type="number" min="0" step="0.01" value={form.freightCost} onChange={(event) => patch({ freightCost: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Duty %")}</label><input aria-label={t("Duty %")} type="number" min="0" step="0.1" value={form.dutyPercent} onChange={(event) => patch({ dutyPercent: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Freight cost")}</label><input aria-label={t("Freight cost")} type="number" min="0" step="0.01" value={form.freightCost} onChange={(event) => patch({ freightCost: Number(event.target.value) })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Insurance cost")}</label><input type="number" min="0" step="0.01" value={form.insuranceCost} onChange={(event) => patch({ insuranceCost: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Insurance cost")}</label><input aria-label={t("Insurance cost")} type="number" min="0" step="0.01" value={form.insuranceCost} onChange={(event) => patch({ insuranceCost: Number(event.target.value) })} /></div>
           </div>
 
-          <div className="section-title" style={{ marginTop: 12 }}>
+          <div className="section-title mt-3">
             <h4>{t("Items")}</h4>
             <button className="small" type="button" onClick={addItem}>{t("Add item")}</button>
           </div>
@@ -206,21 +206,21 @@ export default function Imports({ state, setState }: Props) {
               <div className="field-row" key={`${item.productId}-${index}`}>
                 <div className="field">
                   <label>{t("Product")}</label>
-                  <select value={item.productId} onChange={(event) => updateItem(index, { productId: event.target.value })}>
+                  <select aria-label={t("Product")} value={item.productId} onChange={(event) => updateItem(index, { productId: event.target.value })}>
                     <option value="">{t("Select product")}</option>
                     {state.products.map((product) => (
                       <option key={product.id} value={product.id}>{product.sku} · {product.name}</option>
                     ))}
                   </select>
                 </div>
-                <div className="field"><label>{t("Quantity")}</label><input type="number" min="0" value={item.quantity} onChange={(event) => updateItem(index, { quantity: Number(event.target.value) })} /></div>
-                <div className="field"><label>{t("Unit cost")}</label><input type="number" min="0" step="0.01" value={item.unitCost} onChange={(event) => updateItem(index, { unitCost: Number(event.target.value) })} /></div>
-                <div className="field"><label>{t("Remove")}</label><button className="small" type="button" onClick={() => removeItem(index)}>{t("Remove")}</button></div>
+                <div className="field"><label>{t("Quantity")}</label><input aria-label={t("Quantity")} type="number" min="0" value={item.quantity} onChange={(event) => updateItem(index, { quantity: Number(event.target.value) })} /></div>
+                <div className="field"><label>{t("Unit cost")}</label><input aria-label={t("Unit cost")} type="number" min="0" step="0.01" value={item.unitCost} onChange={(event) => updateItem(index, { unitCost: Number(event.target.value) })} /></div>
+                <div className="field"><button className="small" type="button" onClick={() => removeItem(index)} aria-label={t("Remove")}>{t("Remove")}</button></div>
               </div>
             ))
           )}
 
-          <div className="field"><label>{t("Notes")}</label><textarea value={form.notes} onChange={(event) => patch({ notes: event.target.value })} /></div>
+          <div className="field"><label>{t("Notes")}</label><textarea aria-label={t("Notes")} value={form.notes} onChange={(event) => patch({ notes: event.target.value })} /></div>
           <div className="actions">
             <button
               className="primary"
@@ -274,14 +274,10 @@ export default function Imports({ state, setState }: Props) {
                   <div className="actions">
                     <StatusChip status={batch.status} label={t(batch.status)} />
                     <StatusChip status={batch.customsStatus} label={`${t("Customs status")}: ${t(batch.customsStatus)}`} />
-                    <span className="chip neutral">{t("Landed cost")} {money(totals.landedCost, batch.currency)}</span>
-                    <span className={`chip ${margin >= 20 ? "success" : margin >= 0 ? "warning" : "danger"}`}>
-                      {t("Gross margin")} {percent(margin)}
-                    </span>
                   </div>
                 </div>
 
-                <div className="detail-grid" style={{ marginTop: 10 }}>
+                <div className="detail-grid mt-2">
                   <div className="detail-item"><span>{t("Goods cost")}</span><strong>{money(totals.goodsCost, batch.currency)}</strong></div>
                   <div className="detail-item"><span>{t("Duty")}</span><strong>{money(totals.duty, batch.currency)}</strong></div>
                   <div className="detail-item"><span>{t("Freight cost")}</span><strong>{money(batch.freightCost, batch.currency)}</strong></div>
@@ -291,9 +287,9 @@ export default function Imports({ state, setState }: Props) {
                   <div className="detail-item"><span>{t("Wholesale value")}</span><strong>{money(totals.wholesaleValue, batch.currency)}</strong></div>
                   <div className="detail-item"><span>{t("Gross margin")}</span><strong>{percent(margin)}</strong></div>
                 </div>
-                {batch.notes && <p className="muted-text" style={{ marginTop: 8, marginBottom: 0 }}>{batch.notes}</p>}
+                {batch.notes && <p className="muted-text mt-1 mb-0">{batch.notes}</p>}
 
-                <div className="actions" style={{ marginTop: 10 }}>
+                <div className="actions mt-2">
                   <button className="small" type="button" onClick={() => startEdit(batch)}>{t("Edit")}</button>
                   <button className="small" type="button" onClick={() => removeImport(batch.id)}>{t("Delete")}</button>
                 </div>

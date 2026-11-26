@@ -107,7 +107,7 @@ export default function Dashboard({ state, setTab }: Props) {
         />
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
+      <div className="card mt-4">
         <div className="section-title">
           <h3>{t("AI briefing")}</h3>
           <span className="chip info">{t("Rule-based signals")}</span>
@@ -137,7 +137,7 @@ export default function Dashboard({ state, setTab }: Props) {
         </div>
       </div>
 
-      <div className="grid cols-2" style={{ marginTop: 16 }}>
+      <div className="grid cols-2 mt-4">
         <div className="card">
           <div className="section-title">
             <h3>{t("Shipment watchlist")}</h3>
@@ -168,7 +168,7 @@ export default function Dashboard({ state, setTab }: Props) {
                   <span>{t("ETA")}: {shortDate(shipment.eta)}</span>
                   <span>{t("Destination port")}: {shipment.destinationPort}</span>
                 </div>
-                <div className="actions" style={{ marginTop: 10 }}>
+                <div className="actions mt-2">
                   <button className="small" type="button" onClick={() => setTab("shipments")}>
                     {t("Open module")}
                   </button>

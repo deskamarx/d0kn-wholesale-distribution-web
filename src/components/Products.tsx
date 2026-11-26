@@ -143,54 +143,54 @@ export default function Products({ state, setState }: Props) {
           </p>
 
           <div className="field-row">
-            <div className="field"><label>{t("SKU")}</label><input value={form.sku} onChange={(event) => patch({ sku: event.target.value })} placeholder={t("PH-X9P-256")} /></div>
-            <div className="field"><label>{t("Name")}</label><input value={form.name} onChange={(event) => patch({ name: event.target.value })} placeholder={t("Nova X9 Pro 256GB")} /></div>
+            <div className="field"><label>{t("SKU")}</label><input aria-label={t("SKU")} value={form.sku} onChange={(event) => patch({ sku: event.target.value })} placeholder={t("PH-X9P-256")} /></div>
+            <div className="field"><label>{t("Name")}</label><input aria-label={t("Name")} value={form.name} onChange={(event) => patch({ name: event.target.value })} placeholder={t("Nova X9 Pro 256GB")} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Category")}</label><input value={form.category} onChange={(event) => patch({ category: event.target.value })} /></div>
-            <div className="field"><label>{t("Brand")}</label><input value={form.brand} onChange={(event) => patch({ brand: event.target.value })} /></div>
+            <div className="field"><label>{t("Category")}</label><input aria-label={t("Category")} value={form.category} onChange={(event) => patch({ category: event.target.value })} /></div>
+            <div className="field"><label>{t("Brand")}</label><input aria-label={t("Brand")} value={form.brand} onChange={(event) => patch({ brand: event.target.value })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Model")}</label><input value={form.model} onChange={(event) => patch({ model: event.target.value })} /></div>
-            <div className="field"><label>{t("HS code")}</label><input value={form.hsCode} onChange={(event) => patch({ hsCode: event.target.value })} placeholder={t("8517.13")} /></div>
+            <div className="field"><label>{t("Model")}</label><input aria-label={t("Model")} value={form.model} onChange={(event) => patch({ model: event.target.value })} /></div>
+            <div className="field"><label>{t("HS code")}</label><input aria-label={t("HS code")} value={form.hsCode} onChange={(event) => patch({ hsCode: event.target.value })} placeholder={t("8517.13")} /></div>
           </div>
           <div className="field-row">
             <div className="field">
               <label>{t("Supplier")}</label>
-              <select value={form.supplierId} onChange={(event) => patch({ supplierId: event.target.value })}>
+              <select aria-label={t("Supplier")} value={form.supplierId} onChange={(event) => patch({ supplierId: event.target.value })}>
                 <option value="">{t("Unassigned")}</option>
                 {state.suppliers.map((supplier) => (
                   <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
                 ))}
               </select>
             </div>
-            <div className="field"><label>{t("Country of origin")}</label><input value={form.countryOfOrigin} onChange={(event) => patch({ countryOfOrigin: event.target.value })} /></div>
+            <div className="field"><label>{t("Country of origin")}</label><input aria-label={t("Country of origin")} value={form.countryOfOrigin} onChange={(event) => patch({ countryOfOrigin: event.target.value })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Unit")}</label><input value={form.unit} onChange={(event) => patch({ unit: event.target.value })} /></div>
-            <div className="field"><label>{t("Warranty months")}</label><input type="number" min="0" value={form.warrantyMonths} onChange={(event) => patch({ warrantyMonths: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Unit")}</label><input aria-label={t("Unit")} value={form.unit} onChange={(event) => patch({ unit: event.target.value })} /></div>
+            <div className="field"><label>{t("Warranty months")}</label><input aria-label={t("Warranty months")} type="number" min="0" value={form.warrantyMonths} onChange={(event) => patch({ warrantyMonths: Number(event.target.value) })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Cost")}</label><input type="number" min="0" step="0.01" value={form.cost} onChange={(event) => patch({ cost: Number(event.target.value) })} /></div>
-            <div className="field"><label>{t("Wholesale price")}</label><input type="number" min="0" step="0.01" value={form.wholesalePrice} onChange={(event) => patch({ wholesalePrice: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Cost")}</label><input aria-label={t("Cost")} type="number" min="0" step="0.01" value={form.cost} onChange={(event) => patch({ cost: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Wholesale price")}</label><input aria-label={t("Wholesale price")} type="number" min="0" step="0.01" value={form.wholesalePrice} onChange={(event) => patch({ wholesalePrice: Number(event.target.value) })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Retail price")}</label><input type="number" min="0" step="0.01" value={form.retailPrice} onChange={(event) => patch({ retailPrice: Number(event.target.value) })} /></div>
-            <div className="field"><label>{t("MOQ")}</label><input type="number" min="0" value={form.moq} onChange={(event) => patch({ moq: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Retail price")}</label><input aria-label={t("Retail price")} type="number" min="0" step="0.01" value={form.retailPrice} onChange={(event) => patch({ retailPrice: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("MOQ")}</label><input aria-label={t("MOQ")} type="number" min="0" value={form.moq} onChange={(event) => patch({ moq: Number(event.target.value) })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Stock")}</label><input type="number" min="0" value={form.stock} onChange={(event) => patch({ stock: Number(event.target.value) })} /></div>
-            <div className="field"><label>{t("Reorder point")}</label><input type="number" min="0" value={form.reorderPoint} onChange={(event) => patch({ reorderPoint: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Stock")}</label><input aria-label={t("Stock")} type="number" min="0" value={form.stock} onChange={(event) => patch({ stock: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Reorder point")}</label><input aria-label={t("Reorder point")} type="number" min="0" value={form.reorderPoint} onChange={(event) => patch({ reorderPoint: Number(event.target.value) })} /></div>
           </div>
           <div className="field-row">
             <div className="field">
               <label>{t("Status")}</label>
-              <select value={form.status} onChange={(event) => patch({ status: event.target.value as Status })}>
+              <select aria-label={t("Status")} value={form.status} onChange={(event) => patch({ status: event.target.value as Status })}>
                 {PRODUCT_STATUSES.map((status) => <option key={status} value={status}>{t(status)}</option>)}
               </select>
             </div>
           </div>
-          <div className="field"><label>{t("Notes")}</label><textarea value={form.notes} onChange={(event) => patch({ notes: event.target.value })} /></div>
+          <div className="field"><label>{t("Notes")}</label><textarea aria-label={t("Notes")} value={form.notes} onChange={(event) => patch({ notes: event.target.value })} /></div>
           <div className="actions">
             <button className="primary" type="button" disabled={!form.sku.trim() || !form.name.trim()} onClick={saveProduct}>
               {editingId ? t("Save changes") : t("Save product")}
@@ -239,7 +239,7 @@ export default function Products({ state, setState }: Props) {
           <span className="chip neutral">{number(filtered.length)} {t("shown")}</span>
         </div>
         <div className="toolbar">
-          <input
+          <input aria-label={t("Search SKU, name, brand, category...")}
             placeholder={t("Search SKU, name, brand, category...")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -283,16 +283,16 @@ export default function Products({ state, setState }: Props) {
                   label={`${t("Stock")} ${number(product.stock)} / ${t("Reorder point")} ${number(product.reorderPoint)}`}
                 />
 
-                <div className="meta" style={{ marginTop: 8 }}>
+                <div className="meta mt-1">
                   <span>{t("Cost")} <strong>{money(product.cost)}</strong></span>
                   <span>{t("Wholesale price")} <strong>{money(product.wholesalePrice)}</strong></span>
                   <span>{t("Margin")} <strong>{percent(margin)}</strong></span>
                   <span>{t("MOQ")} <strong>{number(product.moq)}</strong></span>
                   <span>{t("30d demand")} <strong>{number(forecast)}</strong></span>
                 </div>
-                {product.notes && <p className="muted-text" style={{ marginTop: 8, marginBottom: 0 }}>{product.notes}</p>}
+                {product.notes && <p className="muted-text mt-1 mb-0">{product.notes}</p>}
 
-                <div className="actions" style={{ marginTop: 10 }}>
+                <div className="actions mt-2">
                   <button className="small" type="button" onClick={() => startEdit(product)}>{t("Edit")}</button>
                   <button className="small" type="button" onClick={() => toggleStatus(product)}>
                     {product.status === "active" ? t("Block") : t("Activate")}

@@ -150,7 +150,7 @@ export default function Payments({ state, setState }: Props) {
           <h2>{t("Payments")}</h2>
           <p>{t("Record and reconcile customer receipts against invoices.")}</p>
         </div>
-        <button className="primary" type="button" onClick={resetForm}>{t("New payment")}</button>
+        <button className="primary" type="button" onClick={resetForm}>{t("Add payment")}</button>
       </div>
 
       <div className="grid cols-4">
@@ -168,7 +168,7 @@ export default function Payments({ state, setState }: Props) {
         <div className="field-row">
           <div className="field">
             <label>{t("Invoice")}</label>
-            <select value={form.invoiceId} onChange={(event) => setForm({ ...form, invoiceId: event.target.value })}>
+            <select aria-label={t("Invoice")} value={form.invoiceId} onChange={(event) => setForm({ ...form, invoiceId: event.target.value })}>
               <option value="">{t("Select invoice")}</option>
               {state.invoices.map((invoice) => (
                 <option key={invoice.id} value={invoice.id}>{invoice.number}</option>
@@ -177,17 +177,17 @@ export default function Payments({ state, setState }: Props) {
           </div>
           <div className="field">
             <label>{t("Date")}</label>
-            <input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} />
+            <input aria-label={t("Date")} type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} />
           </div>
         </div>
         <div className="field-row">
           <div className="field">
             <label>{t("Amount")}</label>
-            <input type="number" min={0} step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: Number(event.target.value) })} />
+            <input aria-label={t("Amount")} type="number" min={0} step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: Number(event.target.value) })} />
           </div>
           <div className="field">
             <label>{t("Method")}</label>
-            <select value={form.method} onChange={(event) => setForm({ ...form, method: event.target.value })}>
+            <select aria-label={t("Method")} value={form.method} onChange={(event) => setForm({ ...form, method: event.target.value })}>
               {methods.map((method) => (
                 <option key={method} value={method}>{method}</option>
               ))}
@@ -197,11 +197,11 @@ export default function Payments({ state, setState }: Props) {
         <div className="field-row">
           <div className="field">
             <label>{t("Reference")}</label>
-            <input value={form.reference} onChange={(event) => setForm({ ...form, reference: event.target.value })} placeholder={t("TXN-00000")} />
+            <input aria-label={t("Reference")} value={form.reference} onChange={(event) => setForm({ ...form, reference: event.target.value })} placeholder={t("TXN-00000")} />
           </div>
           <div className="field">
             <label>{t("Status")}</label>
-            <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Status })}>
+            <select aria-label={t("Status")} value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Status })}>
               {PAYMENT_STATUSES.map((status) => (
                 <option key={status} value={status}>{t(status)}</option>
               ))}
@@ -210,7 +210,7 @@ export default function Payments({ state, setState }: Props) {
         </div>
         <div className="field">
           <label>{t("Notes")}</label>
-          <textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder={t("Payment terms, reminders, or settlement details")} />
+          <textarea aria-label={t("Notes")} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder={t("Payment terms, reminders, or settlement details")} />
         </div>
         <div className="actions">
           <button className="primary" type="button" onClick={savePayment}>{editingId ? t("Save changes") : t("Add payment")}</button>
@@ -224,14 +224,14 @@ export default function Payments({ state, setState }: Props) {
           <span className="muted-text">{filteredPayments.length} / {state.payments.length} {t("Payments")}</span>
         </div>
         <div className="toolbar">
-          <input placeholder={t("Search payments, invoices, references...")} value={query} onChange={(event) => setQuery(event.target.value)} />
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <input aria-label={t("Search payments, invoices, references...")} placeholder={t("Search payments, invoices, references...")} value={query} onChange={(event) => setQuery(event.target.value)} />
+          <select aria-label={t("Status")} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option value="all">{t("All statuses")}</option>
             {PAYMENT_STATUSES.map((status) => (
               <option key={status} value={status}>{t(status)}</option>
             ))}
           </select>
-          <select value={methodFilter} onChange={(event) => setMethodFilter(event.target.value)}>
+          <select aria-label={t("Method")} value={methodFilter} onChange={(event) => setMethodFilter(event.target.value)}>
             <option value="all">{t("All methods")}</option>
             {methods.map((method) => (
               <option key={method} value={method}>{method}</option>
@@ -271,7 +271,7 @@ export default function Payments({ state, setState }: Props) {
                     )}
                   </div>
                 </div>
-                {payment.notes && <p className="muted-text" style={{ marginTop: 10, marginBottom: 0 }}>{payment.notes}</p>}
+                {payment.notes && <p className="muted-text mt-2 mb-0">{payment.notes}</p>}
               </div>
             );
           })}

@@ -231,7 +231,7 @@ export default function Warehouse({ state, setState }: Props) {
         />
       </div>
 
-      <div className="grid cols-2" style={{ marginTop: 16 }}>
+      <div className="grid cols-2 mt-4">
         <div className="card">
           <div className="section-title">
             <h3>{editingWarehouseId ? t("Edit warehouse") : t("Add warehouse")}</h3>
@@ -240,37 +240,37 @@ export default function Warehouse({ state, setState }: Props) {
           <div className="field-row">
             <div className="field">
               <label>{t("Code")}</label>
-              <input value={warehouseForm.code} onChange={(event) => setWarehouseForm({ ...warehouseForm, code: event.target.value })} placeholder={t("WH-LAX01")} />
+              <input aria-label={t("Code")} value={warehouseForm.code} onChange={(event) => setWarehouseForm({ ...warehouseForm, code: event.target.value })} placeholder={t("WH-LAX01")} />
             </div>
             <div className="field">
               <label>{t("Name")}</label>
-              <input value={warehouseForm.name} onChange={(event) => setWarehouseForm({ ...warehouseForm, name: event.target.value })} />
+              <input aria-label={t("Name")} value={warehouseForm.name} onChange={(event) => setWarehouseForm({ ...warehouseForm, name: event.target.value })} />
             </div>
           </div>
           <div className="field-row">
             <div className="field">
               <label>{t("City")}</label>
-              <input value={warehouseForm.city} onChange={(event) => setWarehouseForm({ ...warehouseForm, city: event.target.value })} />
+              <input aria-label={t("City")} value={warehouseForm.city} onChange={(event) => setWarehouseForm({ ...warehouseForm, city: event.target.value })} />
             </div>
             <div className="field">
               <label>{t("Manager")}</label>
-              <input value={warehouseForm.manager} onChange={(event) => setWarehouseForm({ ...warehouseForm, manager: event.target.value })} />
+              <input aria-label={t("Manager")} value={warehouseForm.manager} onChange={(event) => setWarehouseForm({ ...warehouseForm, manager: event.target.value })} />
             </div>
           </div>
           <div className="field-row">
             <div className="field">
               <label>{t("Capacity (units)")}</label>
-              <input type="number" min={0} value={warehouseForm.capacity} onChange={(event) => setWarehouseForm({ ...warehouseForm, capacity: Math.max(0, Number(event.target.value)) })} />
+              <input aria-label={t("Capacity (units)")} type="number" min={0} value={warehouseForm.capacity} onChange={(event) => setWarehouseForm({ ...warehouseForm, capacity: Math.max(0, Number(event.target.value)) })} />
             </div>
             <div className="field">
               <label>{t("Used (units)")}</label>
-              <input type="number" min={0} value={warehouseForm.used} onChange={(event) => setWarehouseForm({ ...warehouseForm, used: Math.max(0, Number(event.target.value)) })} />
+              <input aria-label={t("Used (units)")} type="number" min={0} value={warehouseForm.used} onChange={(event) => setWarehouseForm({ ...warehouseForm, used: Math.max(0, Number(event.target.value)) })} />
             </div>
           </div>
           <div className="field-row">
             <div className="field">
               <label>{t("Status")}</label>
-              <select value={warehouseForm.status} onChange={(event) => setWarehouseForm({ ...warehouseForm, status: event.target.value as Status })}>
+              <select aria-label={t("Status")} value={warehouseForm.status} onChange={(event) => setWarehouseForm({ ...warehouseForm, status: event.target.value as Status })}>
                 <option value="active">{t("active")}</option>
                 <option value="pending">{t("pending")}</option>
                 <option value="in_progress">{t("in_progress")}</option>
@@ -280,7 +280,7 @@ export default function Warehouse({ state, setState }: Props) {
             </div>
             <div className="field">
               <label>{t("Projected utilization")}</label>
-              <input readOnly value={percent(projectedUtilization)} />
+              <input aria-label={t("Projected utilization")} readOnly value={percent(projectedUtilization)} />
             </div>
           </div>
           <div className="actions">
@@ -291,13 +291,13 @@ export default function Warehouse({ state, setState }: Props) {
 
         <div className="card">
           <div className="section-title">
-            <h3>{editingMovementId ? t("Edit stock movement") : t("Record stock movement")}</h3>
+            <h3>{editingMovementId ? t("Edit stock movement") : t("Add movement")}</h3>
             <span className="chip info">{`${number(state.movements.length)} ${t("movements")}`}</span>
           </div>
           <div className="field-row">
             <div className="field">
               <label>{t("Product")}</label>
-              <select value={movementForm.productId} onChange={(event) => setMovementForm({ ...movementForm, productId: event.target.value })}>
+              <select aria-label={t("Product")} value={movementForm.productId} onChange={(event) => setMovementForm({ ...movementForm, productId: event.target.value })}>
                 <option value="">{t("Select product")}</option>
                 {state.products.map((product) => (
                   <option key={product.id} value={product.id}>{product.name}</option>
@@ -306,7 +306,7 @@ export default function Warehouse({ state, setState }: Props) {
             </div>
             <div className="field">
               <label>{t("Warehouse")}</label>
-              <select value={movementForm.warehouseId} onChange={(event) => setMovementForm({ ...movementForm, warehouseId: event.target.value })}>
+              <select aria-label={t("Warehouse")} value={movementForm.warehouseId} onChange={(event) => setMovementForm({ ...movementForm, warehouseId: event.target.value })}>
                 <option value="">{t("Select warehouse")}</option>
                 {state.warehouses.map((warehouse) => (
                   <option key={warehouse.id} value={warehouse.id}>{warehouse.code} · {warehouse.name}</option>
@@ -317,7 +317,7 @@ export default function Warehouse({ state, setState }: Props) {
           <div className="field-row">
             <div className="field">
               <label>{t("Type")}</label>
-              <select value={movementForm.type} onChange={(event) => setMovementForm({ ...movementForm, type: event.target.value as MovementType })}>
+              <select aria-label={t("Type")} value={movementForm.type} onChange={(event) => setMovementForm({ ...movementForm, type: event.target.value as MovementType })}>
                 <option value="inbound">{t("inbound")}</option>
                 <option value="outbound">{t("outbound")}</option>
                 <option value="transfer">{t("transfer")}</option>
@@ -326,22 +326,22 @@ export default function Warehouse({ state, setState }: Props) {
             </div>
             <div className="field">
               <label>{t("Quantity")}</label>
-              <input type="number" min={1} value={movementForm.quantity} onChange={(event) => setMovementForm({ ...movementForm, quantity: Math.abs(Number(event.target.value)) })} />
+              <input aria-label={t("Quantity")} type="number" min={1} value={movementForm.quantity} onChange={(event) => setMovementForm({ ...movementForm, quantity: Math.abs(Number(event.target.value)) })} />
             </div>
           </div>
           <div className="field-row">
             <div className="field">
               <label>{t("Date")}</label>
-              <input type="date" value={movementForm.date} onChange={(event) => setMovementForm({ ...movementForm, date: event.target.value })} />
+              <input aria-label={t("Date")} type="date" value={movementForm.date} onChange={(event) => setMovementForm({ ...movementForm, date: event.target.value })} />
             </div>
             <div className="field">
               <label>{t("Reference")}</label>
-              <input value={movementForm.reference} onChange={(event) => setMovementForm({ ...movementForm, reference: event.target.value })} placeholder={t("IMP-2026-014")} />
+              <input aria-label={t("Reference")} value={movementForm.reference} onChange={(event) => setMovementForm({ ...movementForm, reference: event.target.value })} placeholder={t("MOV-2026-014")} />
             </div>
           </div>
           <div className="field">
             <label>{t("Notes")}</label>
-            <textarea value={movementForm.notes} onChange={(event) => setMovementForm({ ...movementForm, notes: event.target.value })} />
+            <textarea aria-label={t("Notes")} value={movementForm.notes} onChange={(event) => setMovementForm({ ...movementForm, notes: event.target.value })} />
           </div>
           <div className="actions">
             <button className="primary" type="button" onClick={saveMovement}>{editingMovementId ? t("Save changes") : t("Add movement")}</button>
@@ -356,7 +356,7 @@ export default function Warehouse({ state, setState }: Props) {
           <span className="chip warning">{`${number(activeWarehouses)} ${t("active")}`}</span>
         </div>
         <div className="toolbar">
-          <input placeholder={t("Search warehouses...")} value={warehouseQuery} onChange={(event) => setWarehouseQuery(event.target.value)} />
+          <input aria-label={t("Search warehouses...")} placeholder={t("Search warehouses...")} value={warehouseQuery} onChange={(event) => setWarehouseQuery(event.target.value)} />
         </div>
         <div className="list">
           {filteredWarehouses.length === 0 && <div className="empty">{t("No warehouses found.")}</div>}
@@ -378,7 +378,7 @@ export default function Warehouse({ state, setState }: Props) {
                     <button className="small" type="button" onClick={() => deleteWarehouse(warehouse)}>{t("Delete")}</button>
                   </div>
                 </div>
-                <div className="detail-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginTop: 12 }}>
+                <div className="detail-grid auto-fit mt-3">
                   <div className="detail-item"><span>{t("Capacity")}</span><strong>{`${number(warehouse.capacity)} ${t("units")}`}</strong></div>
                   <div className="detail-item"><span>{t("Used")}</span><strong>{`${number(warehouse.used)} ${t("units")}`}</strong></div>
                   <div className="detail-item"><span>{t("Utilization")}</span><strong>{percent(utilization)}</strong></div>
@@ -396,7 +396,7 @@ export default function Warehouse({ state, setState }: Props) {
           <span className="chip neutral">{t("Product stock is updated on save")}</span>
         </div>
         <div className="toolbar">
-          <input placeholder={t("Search products, warehouses, references...")} value={movementQuery} onChange={(event) => setMovementQuery(event.target.value)} />
+          <input aria-label={t("Search products, warehouses, references...")} placeholder={t("Search products, warehouses, references...")} value={movementQuery} onChange={(event) => setMovementQuery(event.target.value)} />
         </div>
         {filteredMovements.length === 0 ? (
           <div className="empty">{t("No stock movements found.")}</div>
@@ -435,7 +435,7 @@ export default function Warehouse({ state, setState }: Props) {
             </table>
           </div>
         )}
-        <p className="muted-text" style={{ marginTop: 12, marginBottom: 0 }}>
+        <p className="muted-text mt-3 mb-0">
           {t("Inbound increases product stock; outbound and adjustments reduce it. Transfers do not change global stock.")}
         </p>
       </div>

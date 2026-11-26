@@ -2,6 +2,21 @@
 // Sample-data placeholders such as SKU/reference examples stay in English by design.
 
 export const bnExtra: Record<string, string> = {
+  "30-day order velocity from non-cancelled orders, compared with available stock.": "বাতিল নয় এমন অর্ডারের ৩০-দিনের গতি, উপলব্ধ স্টকের সাথে তুলনা করা হয়।",
+  "Carrier delay flags, document status, and ETA pressure on active import legs.": "সক্রিয় আমদানি পর্বে ক্যারিয়ার বিলম্ব সংকেত, ডকুমেন্ট স্থিতি এবং ETA চাপ।",
+  "Certificates, licences, and audits expiring within the next 30 days.": "পরবর্তী ৩০ দিনের মধ্যে মেয়াদ শেষ হওয়া সার্টিফিকেট, লাইসেন্স এবং অডিট।",
+  "Composite score from reliability, quality score, lead time, and compliance status.": "বিশ্বস্ততা, গুণমান স্কোর, লিড টাইম এবং সম্মতি স্থিতি থেকে যৌগিক স্কোর।",
+  "Credit risk": "ক্রেডিট ঝুঁকি",
+  "Demand signal": "চাহিদা সংকেত",
+  "Margin opportunity": "মার্জিন সুযোগ",
+  "Open invoice balances measured against customer credit limits.": "গ্রাহকের ক্রেডিট সীমার বিপরীতে বকেয়া চালানের ব্যালেন্স।",
+  "Shipment risk": "শিপমেন্ট ঝুঁকি",
+  "Supplier health": "সরবরাহকারীর স্বাস্থ্য",
+  "Wholesale-cost spread on products with healthy stock and active demand.": "সুস্থ স্টক ও সক্রিয় চাহিদাযুক্ত পণ্যের পাইকারি খরচের ব্যবধান।",
+  "Compliance expiry": "সম্মতি মেয়াদ শেষ",
+  "Status": "স্থিতি",
+  "Type": "প্রকার",
+  "Method": "পদ্ধতি",
   "30-day demand vs available stock": "৩০ দিনের চাহিদা বনাম প্রাপ্য স্টক",
   "30-day forecast": "৩০ দিনের পূর্বাভাস",
   "30d demand": "৩০ দিনের চাহিদা",
@@ -360,6 +375,21 @@ export const bnExtra: Record<string, string> = {
 };
 
 export const zhExtra: Record<string, string> = {
+  "30-day order velocity from non-cancelled orders, compared with available stock.": "基于未取消订单的30天订单速度，并与可用库存比较。",
+  "Carrier delay flags, document status, and ETA pressure on active import legs.": "活跃进口环节的承运商延误标记、单据状态和到货时间压力。",
+  "Certificates, licences, and audits expiring within the next 30 days.": "未来30天内到期的证书、许可证和审核。",
+  "Composite score from reliability, quality score, lead time, and compliance status.": "由可靠性、质量评分、交期和合规状态组成的综合评分。",
+  "Credit risk": "信用风险",
+  "Demand signal": "需求信号",
+  "Margin opportunity": "利润机会",
+  "Open invoice balances measured against customer credit limits.": "未结发票余额与客户信用额度的对比。",
+  "Shipment risk": "货运风险",
+  "Supplier health": "供应商健康度",
+  "Wholesale-cost spread on products with healthy stock and active demand.": "库存健康且需求活跃产品的批发成本价差。",
+  "Compliance expiry": "合规到期",
+  "Status": "状态",
+  "Type": "类型",
+  "Method": "方式",
   "30-day demand vs available stock": "30天需求与现有库存对比",
   "30-day forecast": "30天预测",
   "30d demand": "30天需求",

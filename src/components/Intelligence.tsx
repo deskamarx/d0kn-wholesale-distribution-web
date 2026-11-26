@@ -142,7 +142,7 @@ export default function Intelligence({ state, setTab }: Props) {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
+      <div className="card mt-4">
         <div className="section-title">
           <h3>{t("Decision queue")}</h3>
           <span className={`chip ${grouped.critical.length > 0 ? "danger" : "success"}`}>
@@ -163,7 +163,7 @@ export default function Intelligence({ state, setTab }: Props) {
             />
           ))}
         </div>
-        <div className="actions" style={{ marginTop: 12 }}>
+        <div className="actions mt-3">
           <button type="button" onClick={() => setTab("products")}>{t("Products")}</button>
           <button type="button" onClick={() => setTab("shipments")}>{t("Shipments")}</button>
           <button type="button" onClick={() => setTab("invoices")}>{t("Invoices")}</button>
@@ -242,7 +242,7 @@ export default function Intelligence({ state, setTab }: Props) {
                   <span>{t("Compliance status")}</span>
                   <StatusChip status={supplier.complianceStatus} label={t(supplier.complianceStatus)} />
                 </div>
-                <div className="actions" style={{ marginTop: 10 }}>
+                <div className="actions mt-2">
                   <button className="small" type="button" onClick={() => setTab("suppliers")}>
                     {t("Open module")}
                   </button>
@@ -334,7 +334,7 @@ export default function Intelligence({ state, setTab }: Props) {
                   tone={tone}
                   label={`${t("Credit limit")}: ${compactMoney(entry.customer.creditLimit, currency)}`}
                 />
-                <div className="actions" style={{ marginTop: 10 }}>
+                <div className="actions mt-2">
                   <button className="small" type="button" onClick={() => setTab("customers")}>
                     {t("Open module")}
                   </button>
@@ -378,7 +378,7 @@ export default function Intelligence({ state, setTab }: Props) {
                 <span>{t("Wholesale price")}: {money(entry.product.wholesalePrice, currency)}</span>
                 <span>{t("Supplier")}: {supplierName(entry.product.supplierId)}</span>
               </div>
-              <div className="actions" style={{ marginTop: 10 }}>
+              <div className="actions mt-2">
                 <button className="small" type="button" onClick={() => setTab("products")}>
                   {t("Open module")}
                 </button>

@@ -163,7 +163,7 @@ export default function Compliance({ state, setState }: Props) {
           <h2>{t("Compliance")}</h2>
           <p>{t("Track licences, certificates, audits, and insurance across the supply chain.")}</p>
         </div>
-        <button className="primary" type="button" onClick={resetForm}>{t("New record")}</button>
+        <button className="primary" type="button" onClick={resetForm}>{t("Add record")}</button>
       </div>
 
       <div className="grid cols-4">
@@ -181,7 +181,7 @@ export default function Compliance({ state, setState }: Props) {
         <div className="field-row">
           <div className="field">
             <label>{t("Type")}</label>
-            <select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as ComplianceType })}>
+            <select aria-label={t("Type")} value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as ComplianceType })}>
               {COMPLIANCE_TYPES.map((type) => (
                 <option key={type} value={type}>{t(type)}</option>
               ))}
@@ -189,13 +189,13 @@ export default function Compliance({ state, setState }: Props) {
           </div>
           <div className="field">
             <label>{t("Reference")}</label>
-            <input value={form.reference} onChange={(event) => setForm({ ...form, reference: event.target.value })} placeholder={t("CMP-2026-000")} />
+            <input aria-label={t("Reference")} value={form.reference} onChange={(event) => setForm({ ...form, reference: event.target.value })} placeholder={t("CMP-2026-000")} />
           </div>
         </div>
         <div className="field-row">
           <div className="field">
             <label>{t("Entity type")}</label>
-            <select
+            <select aria-label={t("Entity type")}
               value={form.entityType}
               onChange={(event) => {
                 const entityType = event.target.value;
@@ -209,7 +209,7 @@ export default function Compliance({ state, setState }: Props) {
           </div>
           <div className="field">
             <label>{t("Linked entity")}</label>
-            <select value={form.entityId} onChange={(event) => setForm({ ...form, entityId: event.target.value })}>
+            <select aria-label={t("Linked entity")} value={form.entityId} onChange={(event) => setForm({ ...form, entityId: event.target.value })}>
               {entityOptions(state, form.entityType).length === 0 && <option value="">{t("No linked records")}</option>}
               {entityOptions(state, form.entityType).map((option) => (
                 <option key={option.id} value={option.id}>{option.label}</option>
@@ -220,11 +220,11 @@ export default function Compliance({ state, setState }: Props) {
         <div className="field-row">
           <div className="field">
             <label>{t("Authority")}</label>
-            <input value={form.authority} onChange={(event) => setForm({ ...form, authority: event.target.value })} placeholder={t("Issuing authority")} />
+            <input aria-label={t("Authority")} value={form.authority} onChange={(event) => setForm({ ...form, authority: event.target.value })} placeholder={t("Issuing authority")} />
           </div>
           <div className="field">
             <label>{t("Status")}</label>
-            <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Status })}>
+            <select aria-label={t("Status")} value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Status })}>
               {RECORD_STATUSES.map((status) => (
                 <option key={status} value={status}>{t(status)}</option>
               ))}
@@ -234,16 +234,16 @@ export default function Compliance({ state, setState }: Props) {
         <div className="field-row">
           <div className="field">
             <label>{t("Issue date")}</label>
-            <input type="date" value={form.issueDate} onChange={(event) => setForm({ ...form, issueDate: event.target.value })} />
+            <input aria-label={t("Issue date")} type="date" value={form.issueDate} onChange={(event) => setForm({ ...form, issueDate: event.target.value })} />
           </div>
           <div className="field">
             <label>{t("Expiry date")}</label>
-            <input type="date" value={form.expiryDate} onChange={(event) => setForm({ ...form, expiryDate: event.target.value })} />
+            <input aria-label={t("Expiry date")} type="date" value={form.expiryDate} onChange={(event) => setForm({ ...form, expiryDate: event.target.value })} />
           </div>
         </div>
         <div className="field">
           <label>{t("Notes")}</label>
-          <textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder={t("Renewal conditions and document details")} />
+          <textarea aria-label={t("Notes")} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder={t("Renewal conditions and document details")} />
         </div>
         <div className="actions">
           <button className="primary" type="button" onClick={saveRecord}>{editingId ? t("Save changes") : t("Add record")}</button>
@@ -257,14 +257,14 @@ export default function Compliance({ state, setState }: Props) {
           <span className="muted-text">{filteredRecords.length} / {state.compliance.length} {t("Compliance")}</span>
         </div>
         <div className="toolbar">
-          <input placeholder={t("Search compliance records...")} value={query} onChange={(event) => setQuery(event.target.value)} />
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <input aria-label={t("Search compliance records...")} placeholder={t("Search compliance records...")} value={query} onChange={(event) => setQuery(event.target.value)} />
+          <select aria-label={t("Status")} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option value="all">{t("All statuses")}</option>
             {RECORD_STATUSES.map((status) => (
               <option key={status} value={status}>{t(status)}</option>
             ))}
           </select>
-          <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+          <select aria-label={t("Type")} value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
             <option value="all">{t("All types")}</option>
             {COMPLIANCE_TYPES.map((type) => (
               <option key={type} value={type}>{t(type)}</option>
@@ -276,14 +276,9 @@ export default function Compliance({ state, setState }: Props) {
           {filteredRecords.map((record) => {
             const days = daysUntil(record.expiryDate);
             const tone = recordTone(record);
-            const rowStyle =
-              tone === "danger"
-                ? { borderColor: "#f3b4ae", background: "#fff6f5" }
-                : tone === "warning"
-                  ? { borderColor: "#f6cf9a", background: "#fffbf4" }
-                  : undefined;
+            const toneClass = tone === "danger" ? " tone-danger" : tone === "warning" ? " tone-warning" : "";
             return (
-              <div className="row-card" key={record.id} style={rowStyle}>
+              <div className={`row-card${toneClass}`} key={record.id}>
                 <div className="row-top">
                   <div>
                     <h4>{t(record.type)} · {record.reference}</h4>
@@ -315,7 +310,7 @@ export default function Compliance({ state, setState }: Props) {
                     )}
                   </div>
                 </div>
-                {record.notes && <p className="muted-text" style={{ marginTop: 10, marginBottom: 0 }}>{record.notes}</p>}
+                {record.notes && <p className="muted-text mt-2 mb-0">{record.notes}</p>}
               </div>
             );
           })}

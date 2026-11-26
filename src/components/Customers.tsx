@@ -120,37 +120,37 @@ export default function Customers({ state, setState }: Props) {
         <div className="field-row">
           <div className="field">
             <label>{t("Company")}</label>
-            <input value={form.company} onChange={(event) => setForm({ ...form, company: event.target.value })} />
+            <input aria-label={t("Company")} value={form.company} onChange={(event) => setForm({ ...form, company: event.target.value })} />
           </div>
           <div className="field">
             <label>{t("Contact")}</label>
-            <input value={form.contact} onChange={(event) => setForm({ ...form, contact: event.target.value })} />
+            <input aria-label={t("Contact")} value={form.contact} onChange={(event) => setForm({ ...form, contact: event.target.value })} />
           </div>
         </div>
         <div className="field-row">
           <div className="field">
             <label>{t("Phone")}</label>
-            <input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
+            <input aria-label={t("Phone")} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
           </div>
           <div className="field">
             <label>{t("Email")}</label>
-            <input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
+            <input aria-label={t("Email")} type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
           </div>
         </div>
         <div className="field-row">
           <div className="field">
             <label>{t("Country")}</label>
-            <input value={form.country} onChange={(event) => setForm({ ...form, country: event.target.value })} />
+            <input aria-label={t("Country")} value={form.country} onChange={(event) => setForm({ ...form, country: event.target.value })} />
           </div>
           <div className="field">
             <label>{t("City")}</label>
-            <input value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} />
+            <input aria-label={t("City")} value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} />
           </div>
         </div>
         <div className="field-row">
           <div className="field">
             <label>{t("Type")}</label>
-            <select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as CustomerType })}>
+            <select aria-label={t("Type")} value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as CustomerType })}>
               <option value="distributor">{t("distributor")}</option>
               <option value="retailer">{t("retailer")}</option>
               <option value="corporate">{t("corporate")}</option>
@@ -159,17 +159,17 @@ export default function Customers({ state, setState }: Props) {
           </div>
           <div className="field">
             <label>{t("Credit limit")}</label>
-            <input type="number" min={0} value={form.creditLimit} onChange={(event) => setForm({ ...form, creditLimit: Math.max(0, Number(event.target.value)) })} />
+            <input aria-label={t("Credit limit")} type="number" min={0} value={form.creditLimit} onChange={(event) => setForm({ ...form, creditLimit: Math.max(0, Number(event.target.value)) })} />
           </div>
         </div>
         <div className="field-row">
           <div className="field">
             <label>{t("Payment terms")}</label>
-            <input value={form.paymentTerms} onChange={(event) => setForm({ ...form, paymentTerms: event.target.value })} placeholder={t("Net 30")} />
+            <input aria-label={t("Payment terms")} value={form.paymentTerms} onChange={(event) => setForm({ ...form, paymentTerms: event.target.value })} placeholder={t("Net 30")} />
           </div>
           <div className="field">
             <label>{t("Status")}</label>
-            <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Status })}>
+            <select aria-label={t("Status")} value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Status })}>
               <option value="active">{t("active")}</option>
               <option value="pending">{t("pending")}</option>
               <option value="in_progress">{t("in_progress")}</option>
@@ -180,7 +180,7 @@ export default function Customers({ state, setState }: Props) {
         </div>
         <div className="field">
           <label>{t("Notes")}</label>
-          <textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
+          <textarea aria-label={t("Notes")} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
         </div>
         <div className="actions">
           <button className="primary" type="button" onClick={saveCustomer}>{editingId ? t("Save changes") : t("Add customer")}</button>
@@ -194,7 +194,7 @@ export default function Customers({ state, setState }: Props) {
           <span className="chip warning">{`${number(activeAccounts)} ${t("active")}`}</span>
         </div>
         <div className="toolbar">
-          <input placeholder={t("Search customers...")} value={query} onChange={(event) => setQuery(event.target.value)} />
+          <input aria-label={t("Search customers...")} placeholder={t("Search customers...")} value={query} onChange={(event) => setQuery(event.target.value)} />
         </div>
         <div className="list">
           {filtered.length === 0 && <div className="empty">{t("No customers found.")}</div>}
@@ -222,7 +222,7 @@ export default function Customers({ state, setState }: Props) {
                     <button className="small" type="button" onClick={() => deleteCustomer(customer)}>{t("Delete")}</button>
                   </div>
                 </div>
-                <div className="detail-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginTop: 12 }}>
+                <div className="detail-grid auto-fit mt-3">
                   <div className="detail-item"><span>{t("Credit limit")}</span><strong>{money(customer.creditLimit)}</strong></div>
                   <div className="detail-item"><span>{t("Exposure")}</span><strong>{money(exposure)}</strong></div>
                   <div className="detail-item"><span>{t("Payment terms")}</span><strong>{customer.paymentTerms || "—"}</strong></div>
@@ -237,7 +237,7 @@ export default function Customers({ state, setState }: Props) {
             );
           })}
         </div>
-        <p className="muted-text" style={{ marginTop: 12, marginBottom: 0 }}>
+        <p className="muted-text mt-3 mb-0">
           {t("Accounts above 80% credit utilization are highlighted for review.")}
         </p>
       </div>

@@ -189,11 +189,11 @@ export default function Quotations({ state, setState }: Props) {
         <div className="field-row">
           <div className="field">
             <label>{t("Number")}</label>
-            <input value={form.number} onChange={(event) => setForm({ ...form, number: event.target.value })} />
+            <input aria-label={t("Number")} value={form.number} onChange={(event) => setForm({ ...form, number: event.target.value })} />
           </div>
           <div className="field">
             <label>{t("Customer")}</label>
-            <select value={form.customerId} onChange={(event) => setForm({ ...form, customerId: event.target.value })}>
+            <select aria-label={t("Customer")} value={form.customerId} onChange={(event) => setForm({ ...form, customerId: event.target.value })}>
               <option value="">{t("Select customer")}</option>
               {state.customers.map((customer) => (
                 <option key={customer.id} value={customer.id}>{customer.company}</option>
@@ -204,17 +204,17 @@ export default function Quotations({ state, setState }: Props) {
         <div className="field-row">
           <div className="field">
             <label>{t("Date")}</label>
-            <input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} />
+            <input aria-label={t("Date")} type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} />
           </div>
           <div className="field">
             <label>{t("Valid until")}</label>
-            <input type="date" value={form.validUntil} onChange={(event) => setForm({ ...form, validUntil: event.target.value })} />
+            <input aria-label={t("Valid until")} type="date" value={form.validUntil} onChange={(event) => setForm({ ...form, validUntil: event.target.value })} />
           </div>
         </div>
         <div className="field-row">
           <div className="field">
             <label>{t("Status")}</label>
-            <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Status })}>
+            <select aria-label={t("Status")} value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Status })}>
               <option value="draft">{t("draft")}</option>
               <option value="sent">{t("sent")}</option>
               <option value="approved">{t("approved")}</option>
@@ -224,12 +224,12 @@ export default function Quotations({ state, setState }: Props) {
           </div>
           <div className="field">
             <label>{t("Quoted value")}</label>
-            <input readOnly value={money(quoteTotal(form.items))} />
+            <input aria-label={t("Quoted value")} readOnly value={money(quoteTotal(form.items))} />
           </div>
         </div>
         <div className="field">
           <label>{t("Notes")}</label>
-          <textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
+          <textarea aria-label={t("Notes")} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
         </div>
 
         <div className="section-title">
@@ -239,10 +239,10 @@ export default function Quotations({ state, setState }: Props) {
         <div className="order-lines">
           {form.items.length === 0 && <div className="empty">{t("No line items yet.")}</div>}
           {form.items.map((item, index) => (
-            <div className="line-row" key={index} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, alignItems: "end", marginBottom: 8 }}>
+            <div className="line-row" key={index}>
               <div className="field">
                 <label>{t("Product")}</label>
-                <select value={item.productId} onChange={(event) => selectProduct(index, event.target.value)}>
+                <select aria-label={t("Product")} value={item.productId} onChange={(event) => selectProduct(index, event.target.value)}>
                   <option value="">{t("Select product")}</option>
                   {state.products.map((product) => (
                     <option key={product.id} value={product.id}>{product.name}</option>
@@ -251,19 +251,19 @@ export default function Quotations({ state, setState }: Props) {
               </div>
               <div className="field">
                 <label>{t("Quantity")}</label>
-                <input type="number" min={0} value={item.quantity} onChange={(event) => updateLine(index, { quantity: Math.max(0, Number(event.target.value)) })} />
+                <input aria-label={t("Quantity")} type="number" min={0} value={item.quantity} onChange={(event) => updateLine(index, { quantity: Math.max(0, Number(event.target.value)) })} />
               </div>
               <div className="field">
                 <label>{t("Unit price")}</label>
-                <input type="number" min={0} value={item.unitPrice} onChange={(event) => updateLine(index, { unitPrice: Math.max(0, Number(event.target.value)) })} />
+                <input aria-label={t("Unit price")} type="number" min={0} value={item.unitPrice} onChange={(event) => updateLine(index, { unitPrice: Math.max(0, Number(event.target.value)) })} />
               </div>
               <div className="field">
                 <label>{t("Discount %")}</label>
-                <input type="number" min={0} max={100} value={item.discountPercent} onChange={(event) => updateLine(index, { discountPercent: Math.min(100, Math.max(0, Number(event.target.value))) })} />
+                <input aria-label={t("Discount %")} type="number" min={0} max={100} value={item.discountPercent} onChange={(event) => updateLine(index, { discountPercent: Math.min(100, Math.max(0, Number(event.target.value))) })} />
               </div>
               <div className="field">
                 <label>{t("Amount")}</label>
-                <input readOnly value={money(lineAmount(item))} />
+                <input aria-label={t("Amount")} readOnly value={money(lineAmount(item))} />
               </div>
               <div className="field">
                 <button className="small" type="button" onClick={() => removeLine(index)}>{t("Remove")}</button>
@@ -271,7 +271,7 @@ export default function Quotations({ state, setState }: Props) {
             </div>
           ))}
         </div>
-        <div className="actions" style={{ marginTop: 8 }}>
+        <div className="actions mt-1">
           <button className="primary" type="button" onClick={saveQuote}>{editingId ? t("Save changes") : t("Add quotation")}</button>
           {editingId && <button type="button" onClick={cancelEdit}>{t("Cancel")}</button>}
           <span>{`${t("Total")}: ${money(quoteTotal(form.items))}`}</span>
@@ -284,8 +284,8 @@ export default function Quotations({ state, setState }: Props) {
           <span className="chip neutral">{t("Approved and valid quotes can be converted")}</span>
         </div>
         <div className="toolbar">
-          <input placeholder={t("Search quotations...")} value={query} onChange={(event) => setQuery(event.target.value)} />
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <input aria-label={t("Search quotations...")} placeholder={t("Search quotations...")} value={query} onChange={(event) => setQuery(event.target.value)} />
+          <select aria-label={t("Status")} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option value="all">{t("All statuses")}</option>
             <option value="draft">{t("draft")}</option>
             <option value="sent">{t("sent")}</option>
@@ -315,15 +315,14 @@ export default function Quotations({ state, setState }: Props) {
                     <strong>{money(total)}</strong>
                   </div>
                 </div>
-                <div className="detail-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginTop: 12 }}>
+                <div className="detail-grid auto-fit mt-3">
                   <div className="detail-item"><span>{t("Line items")}</span><strong>{number(quote.items.length)}</strong></div>
-                  <div className="detail-item"><span>{t("Quoted total")}</span><strong>{money(total)}</strong></div>
                   <div className="detail-item">
                     <span>{t("Validity")}</span>
                     <strong>{days === null ? "—" : `${number(days)} ${t("days")}`}</strong>
                   </div>
                 </div>
-                <div className="actions" style={{ marginTop: 12 }}>
+                <div className="actions mt-3">
                   <button className="small" type="button" onClick={() => patchQuote(quote, { status: "sent" })}>{t("Mark sent")}</button>
                   <button className="small" type="button" onClick={() => patchQuote(quote, { status: "approved" })}>{t("Mark approved")}</button>
                   <button className="small" type="button" onClick={() => patchQuote(quote, { status: "expired" })}>{t("Mark expired")}</button>

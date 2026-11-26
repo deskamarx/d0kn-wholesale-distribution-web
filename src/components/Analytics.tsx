@@ -64,7 +64,7 @@ export default function Analytics({ state }: Props) {
 
   const donutBackground = categoryMix.length
     ? `conic-gradient(${categoryMix.map((item) => `${item.color} ${item.start}% ${item.end}%`).join(", ")})`
-    : "conic-gradient(#e2e6ee 0% 100%)";
+    : "conic-gradient(var(--border) 0% 100%)";
 
   const topProducts = useMemo(() => getTopProducts(state, 6), [state]);
 
@@ -114,56 +114,32 @@ export default function Analytics({ state }: Props) {
         <Metric label={t("Supplier count")} value={number(state.suppliers.length)} hint={t("China sourcing partners")} />
       </div>
 
-      <div className="grid cols-2" style={{ marginTop: 16 }}>
+      <div className="grid cols-2 mt-4">
         <div className="card">
           <div className="section-title">
             <h3>{t("Category mix")}</h3>
             <span className="muted-text">{t("Share of order value")}</span>
           </div>
-          <div className="donut-wrap" style={{ display: "flex", justifyContent: "center", margin: "8px 0 16px" }}>
-            <div
-              className="donut"
-              style={{
-                width: 172,
-                height: 172,
-                borderRadius: "50%",
-                background: donutBackground,
-                display: "grid",
-                placeItems: "center",
-              }}
-            >
-              <div
-                className="donut-center"
-                style={{
-                  width: 112,
-                  height: 112,
-                  borderRadius: "50%",
-                  background: "#fff",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 2,
-                  textAlign: "center",
-                }}
-              >
-                <span style={{ color: "#667085", fontSize: 11 }}>{t("Order value")}</span>
-                <strong style={{ fontSize: 18 }}>{compactMoney(headline.revenue, state.company.defaultCurrency)}</strong>
+          <div className="donut-wrap">
+            <div className="donut" style={{ background: donutBackground }}>
+              <div className="donut-center">
+                <span>{t("Order value")}</span>
+                <strong>{compactMoney(headline.revenue, state.company.defaultCurrency)}</strong>
               </div>
             </div>
           </div>
-          <div className="legend" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className="legend">
             {categoryMix.length === 0 && <div className="empty">{t("No category data available")}</div>}
             {categoryMix.map((item) => (
-              <div className="legend-item" key={item.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 10, height: 10, borderRadius: 3, background: item.color, flex: "0 0 10px" }} />
-                <span style={{ flex: 1 }}>{item.label}</span>
+              <div className="legend-item" key={item.label}>
+                <span className="legend-swatch" style={{ background: item.color }} />
+                <span className="legend-grow">{item.label}</span>
                 <strong>{percent(item.share)}</strong>
                 <span className="muted-text">{compactMoney(item.value, state.company.defaultCurrency)}</span>
               </div>
             ))}
           </div>
-          <div className="detail-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 16 }}>
+          <div className="detail-grid mt-4">
             <div className="detail-item">
               <span className="muted-text">{t("Inventory value")}</span>
               <strong>{compactMoney(headline.inventoryValue, state.company.defaultCurrency)}</strong>
@@ -192,13 +168,13 @@ export default function Analytics({ state }: Props) {
               maxLabel={(value) => compactMoney(value, state.company.defaultCurrency)}
             />
           )}
-          <p className="muted-text" style={{ marginTop: 14, marginBottom: 0 }}>
+          <p className="muted-text mt-4 mb-0">
             {t("Ranked by invoiced order lines, excluding cancelled orders.")}
           </p>
         </div>
       </div>
 
-      <div className="grid cols-2" style={{ marginTop: 16 }}>
+      <div className="grid cols-2 mt-4">
         <div className="card">
           <div className="section-title">
             <h3>{t("Supplier health")}</h3>
@@ -269,7 +245,7 @@ export default function Analytics({ state }: Props) {
         </div>
       </div>
 
-      <div className="grid cols-2" style={{ marginTop: 16 }}>
+      <div className="grid cols-2 mt-4">
         <div className="card">
           <div className="section-title">
             <h3>{t("Credit exposure watchlist")}</h3>

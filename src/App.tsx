@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Dashboard from "./components/Dashboard";
 import Intelligence from "./components/Intelligence";
 import Analytics from "./components/Analytics";
@@ -31,11 +31,20 @@ function loadTheme(): Theme {
   try {
     const value = window.localStorage.getItem(THEME_KEY);
     if (value === "light" || value === "dark") return value;
+    if (document.documentElement.dataset.theme === "dark") return "dark";
     if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) return "dark";
   } catch {
     // Ignore unavailable storage or media queries.
   }
   return "light";
+}
+
+function applyTheme(theme: Theme) {
+  document.documentElement.dataset.theme = theme;
+  document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute(
+    "content",
+    theme === "dark" ? "#080d1c" : "#14245c"
+  );
 }
 
 interface NavItem {
@@ -123,6 +132,7 @@ export default function App() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(loadTheme);
+  const moreSheetRef = useRef<HTMLDivElement>(null);
   const { device, previewOverride, setPreviewOverride } = useDeviceProfile();
   const { language, setLanguage, t } = useLanguage();
 
@@ -140,7 +150,7 @@ export default function App() {
   }, [state]);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    applyTheme(theme);
     localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
 
@@ -149,7 +159,10 @@ export default function App() {
   }, [t]);
 
   useEffect(() => {
-    const onHashChange = () => setTabState(tabFromHash());
+    const onHashChange = () => {
+      const id = window.location.hash.replace(/^#/, "");
+      if (ALL_NAV_ITEMS.some((item) => item.id === id)) setTabState(id);
+    };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
@@ -157,14 +170,36 @@ export default function App() {
   useEffect(() => {
     if (!moreOpen) return;
     const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement as HTMLElement | null;
     document.body.style.overflow = "hidden";
+    moreSheetRef.current?.querySelector<HTMLElement>("button")?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMoreOpen(false);
+      if (event.key === "Escape") {
+        setMoreOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !moreSheetRef.current) return;
+      const focusables = Array.from(
+        moreSheetRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((element) => element.offsetParent !== null);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
+      previousFocus?.focus();
     };
   }, [moreOpen]);
 
@@ -250,11 +285,22 @@ export default function App() {
 
   return (
     <div className="app" data-device={device.effective} data-preview={previewOverride}>
-      <a className="skip-link" href="#main-content">{t("Skip to content")}</a>
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          event.preventDefault();
+          const main = document.getElementById("main-content");
+          main?.focus();
+          main?.scrollIntoView({ block: "start" });
+        }}
+      >
+        {t("Skip to content")}
+      </a>
 
       <aside className="sidebar" aria-label={t("Application sidebar")}>
         <div className="brand">
-          <div className="brand-mark">D0</div>
+          <div className="brand-mark">D0K</div>
           <div className="brand-text">
             <strong>{t("D0K@N Global Distribution")}</strong>
             <span>{t("Wholesale · Import · Logistics")}</span>
@@ -271,7 +317,7 @@ export default function App() {
               <span>{t(device.layoutLabel)}</span>
             </div>
           </div>
-          <div className="sidebar-version">{t("Distribution OS v2.0 · local workspace")}</div>
+          <div className="sidebar-version">{t("Distribution OS v2.1 · local workspace")}</div>
         </div>
       </aside>
 
@@ -346,9 +392,9 @@ export default function App() {
           </div>
         </header>
 
-        <main className="main" id="main-content">{renderTab()}</main>
+        <main className="main" id="main-content" tabIndex={-1}>{renderTab()}</main>
 
-        <footer className="app-footer">{t("D0K@N Global Distribution · intelligent wholesale operations · v2.0")}</footer>
+        <footer className="app-footer">{t("D0K@N Global Distribution · intelligent wholesale operations · v2.1")}</footer>
       </div>
 
       <nav className="mobile-bottom-nav" aria-label={t("Mobile navigation")}>
@@ -379,7 +425,7 @@ export default function App() {
       {moreOpen && (
         <div className="mobile-sheet-layer" role="dialog" aria-modal="true" aria-label={t("All sections")}>
           <button className="sheet-backdrop" type="button" aria-label={t("Close")} onClick={() => setMoreOpen(false)} />
-          <div className="mobile-sheet">
+          <div className="mobile-sheet" ref={moreSheetRef}>
             <div className="sheet-handle" />
             <div className="sheet-header">
               <div>

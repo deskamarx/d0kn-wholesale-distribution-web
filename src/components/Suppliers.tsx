@@ -132,34 +132,34 @@ export default function Suppliers({ state, setState }: Props) {
           <p className="muted-text">{t("Score inputs directly affect the partner scorecard and review flags.")}</p>
 
           <div className="field-row">
-            <div className="field"><label>{t("Name")}</label><input value={form.name} onChange={(event) => patch({ name: event.target.value })} /></div>
-            <div className="field"><label>{t("Chinese name")}</label><input value={form.chineseName} onChange={(event) => patch({ chineseName: event.target.value })} /></div>
+            <div className="field"><label>{t("Name")}</label><input aria-label={t("Name")} value={form.name} onChange={(event) => patch({ name: event.target.value })} /></div>
+            <div className="field"><label>{t("Chinese name")}</label><input aria-label={t("Chinese name")} value={form.chineseName} onChange={(event) => patch({ chineseName: event.target.value })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("City")}</label><input value={form.city} onChange={(event) => patch({ city: event.target.value })} /></div>
-            <div className="field"><label>{t("Country")}</label><input value={form.country} onChange={(event) => patch({ country: event.target.value })} /></div>
+            <div className="field"><label>{t("City")}</label><input aria-label={t("City")} value={form.city} onChange={(event) => patch({ city: event.target.value })} /></div>
+            <div className="field"><label>{t("Country")}</label><input aria-label={t("Country")} value={form.country} onChange={(event) => patch({ country: event.target.value })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Contact")}</label><input value={form.contact} onChange={(event) => patch({ contact: event.target.value })} /></div>
-            <div className="field"><label>{t("WeChat")}</label><input value={form.wechat} onChange={(event) => patch({ wechat: event.target.value })} /></div>
+            <div className="field"><label>{t("Contact")}</label><input aria-label={t("Contact")} value={form.contact} onChange={(event) => patch({ contact: event.target.value })} /></div>
+            <div className="field"><label>{t("WeChat")}</label><input aria-label={t("WeChat")} value={form.wechat} onChange={(event) => patch({ wechat: event.target.value })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Phone")}</label><input value={form.phone} onChange={(event) => patch({ phone: event.target.value })} /></div>
-            <div className="field"><label>{t("Email")}</label><input type="email" value={form.email} onChange={(event) => patch({ email: event.target.value })} /></div>
+            <div className="field"><label>{t("Phone")}</label><input aria-label={t("Phone")} value={form.phone} onChange={(event) => patch({ phone: event.target.value })} /></div>
+            <div className="field"><label>{t("Email")}</label><input aria-label={t("Email")} type="email" value={form.email} onChange={(event) => patch({ email: event.target.value })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Payment terms")}</label><input value={form.paymentTerms} onChange={(event) => patch({ paymentTerms: event.target.value })} /></div>
-            <div className="field"><label>{t("Incoterm")}</label><input value={form.incoterm} onChange={(event) => patch({ incoterm: event.target.value })} /></div>
+            <div className="field"><label>{t("Payment terms")}</label><input aria-label={t("Payment terms")} value={form.paymentTerms} onChange={(event) => patch({ paymentTerms: event.target.value })} /></div>
+            <div className="field"><label>{t("Incoterm")}</label><input aria-label={t("Incoterm")} value={form.incoterm} onChange={(event) => patch({ incoterm: event.target.value })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Lead time days")}</label><input type="number" min="0" value={form.leadTimeDays} onChange={(event) => patch({ leadTimeDays: Number(event.target.value) })} /></div>
-            <div className="field"><label>{t("Reliability")}</label><input type="number" min="0" max="100" value={form.reliability} onChange={(event) => patch({ reliability: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Lead time days")}</label><input aria-label={t("Lead time days")} type="number" min="0" value={form.leadTimeDays} onChange={(event) => patch({ leadTimeDays: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Reliability")}</label><input aria-label={t("Reliability")} type="number" min="0" max="100" value={form.reliability} onChange={(event) => patch({ reliability: Number(event.target.value) })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Quality score")}</label><input type="number" min="0" max="100" value={form.qualityScore} onChange={(event) => patch({ qualityScore: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Quality score")}</label><input aria-label={t("Quality score")} type="number" min="0" max="100" value={form.qualityScore} onChange={(event) => patch({ qualityScore: Number(event.target.value) })} /></div>
             <div className="field">
               <label>{t("Compliance status")}</label>
-              <select value={form.complianceStatus} onChange={(event) => patch({ complianceStatus: event.target.value as Status })}>
+              <select aria-label={t("Compliance status")} value={form.complianceStatus} onChange={(event) => patch({ complianceStatus: event.target.value as Status })}>
                 {COMPLIANCE_STATUSES.map((status) => <option key={status} value={status}>{t(status)}</option>)}
               </select>
             </div>
@@ -167,12 +167,12 @@ export default function Suppliers({ state, setState }: Props) {
           <div className="field-row">
             <div className="field">
               <label>{t("Status")}</label>
-              <select value={form.status} onChange={(event) => patch({ status: event.target.value as Status })}>
+              <select aria-label={t("Status")} value={form.status} onChange={(event) => patch({ status: event.target.value as Status })}>
                 {SUPPLIER_STATUSES.map((status) => <option key={status} value={status}>{t(status)}</option>)}
               </select>
             </div>
           </div>
-          <div className="field"><label>{t("Notes")}</label><textarea value={form.notes} onChange={(event) => patch({ notes: event.target.value })} /></div>
+          <div className="field"><label>{t("Notes")}</label><textarea aria-label={t("Notes")} value={form.notes} onChange={(event) => patch({ notes: event.target.value })} /></div>
           <div className="actions">
             <button className="primary" type="button" disabled={!form.name.trim()} onClick={saveSupplier}>
               {editingId ? t("Save changes") : t("Save supplier")}
@@ -273,16 +273,16 @@ export default function Suppliers({ state, setState }: Props) {
                   label={`${t("Partner score")} · ${t("Reliability")} ${supplier.reliability} · ${t("Quality score")} ${supplier.qualityScore}`}
                 />
 
-                <div className="meta" style={{ marginTop: 8 }}>
+                <div className="meta mt-1">
                   <span>{t("Contact")} <strong>{supplier.contact || "—"}</strong></span>
                   <span>{t("WeChat")} <strong>{supplier.wechat || "—"}</strong></span>
                   <span>{t("Phone")} <strong>{supplier.phone || "—"}</strong></span>
                   <span>{t("Email")} <strong>{supplier.email || "—"}</strong></span>
                   <span>{t("Incoterm")} <strong>{supplier.incoterm || "—"}</strong></span>
                 </div>
-                {supplier.notes && <p className="muted-text" style={{ marginTop: 8, marginBottom: 0 }}>{supplier.notes}</p>}
+                {supplier.notes && <p className="muted-text mt-1 mb-0">{supplier.notes}</p>}
 
-                <div className="actions" style={{ marginTop: 10 }}>
+                <div className="actions mt-2">
                   <button className="small" type="button" onClick={() => startEdit(supplier)}>{t("Edit")}</button>
                   <button className="small" type="button" onClick={() => toggleStatus(supplier)}>
                     {supplier.status === "active" ? t("Block") : t("Activate")}

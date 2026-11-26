@@ -155,10 +155,10 @@ export default function Shipments({ state, setState }: Props) {
           <p className="muted-text">{t("Link the booking to an import so the shipment watchlist stays in sync.")}</p>
 
           <div className="field-row">
-            <div className="field"><label>{t("Reference")}</label><input value={form.reference} onChange={(event) => patch({ reference: event.target.value })} placeholder={t("SHP-014")} /></div>
+            <div className="field"><label>{t("Reference")}</label><input aria-label={t("Reference")} value={form.reference} onChange={(event) => patch({ reference: event.target.value })} placeholder={t("SHP-014")} /></div>
             <div className="field">
               <label>{t("Import")}</label>
-              <select value={form.importId} onChange={(event) => patch({ importId: event.target.value })}>
+              <select aria-label={t("Import")} value={form.importId} onChange={(event) => patch({ importId: event.target.value })}>
                 <option value="">{t("Not linked")}</option>
                 {state.imports.map((batch) => (
                   <option key={batch.id} value={batch.id}>{batch.reference}</option>
@@ -167,36 +167,36 @@ export default function Shipments({ state, setState }: Props) {
             </div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Carrier")}</label><input value={form.carrier} onChange={(event) => patch({ carrier: event.target.value })} /></div>
+            <div className="field"><label>{t("Carrier")}</label><input aria-label={t("Carrier")} value={form.carrier} onChange={(event) => patch({ carrier: event.target.value })} /></div>
             <div className="field">
               <label>{t("Mode")}</label>
-              <select value={form.mode} onChange={(event) => patch({ mode: event.target.value as ShipmentMode })}>
+              <select aria-label={t("Mode")} value={form.mode} onChange={(event) => patch({ mode: event.target.value as ShipmentMode })}>
                 {MODES.map((mode) => <option key={mode} value={mode}>{t(titleCase(mode))}</option>)}
               </select>
             </div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Origin port")}</label><input value={form.originPort} onChange={(event) => patch({ originPort: event.target.value })} /></div>
-            <div className="field"><label>{t("Destination port")}</label><input value={form.destinationPort} onChange={(event) => patch({ destinationPort: event.target.value })} /></div>
+            <div className="field"><label>{t("Origin port")}</label><input aria-label={t("Origin port")} value={form.originPort} onChange={(event) => patch({ originPort: event.target.value })} /></div>
+            <div className="field"><label>{t("Destination port")}</label><input aria-label={t("Destination port")} value={form.destinationPort} onChange={(event) => patch({ destinationPort: event.target.value })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Departure date")}</label><input type="date" value={form.departureDate} onChange={(event) => patch({ departureDate: event.target.value })} /></div>
-            <div className="field"><label>{t("ETA")}</label><input type="date" value={form.eta} onChange={(event) => patch({ eta: event.target.value })} /></div>
+            <div className="field"><label>{t("Departure date")}</label><input aria-label={t("Departure date")} type="date" value={form.departureDate} onChange={(event) => patch({ departureDate: event.target.value })} /></div>
+            <div className="field"><label>{t("ETA")}</label><input aria-label={t("ETA")} type="date" value={form.eta} onChange={(event) => patch({ eta: event.target.value })} /></div>
           </div>
           <div className="field-row">
             <div className="field">
               <label>{t("Status")}</label>
-              <select value={form.status} onChange={(event) => patch({ status: event.target.value as Status | "scheduled" })}>
+              <select aria-label={t("Status")} value={form.status} onChange={(event) => patch({ status: event.target.value as Status | "scheduled" })}>
                 {SHIPMENT_STATUSES.map((status) => <option key={status} value={status}>{t(status)}</option>)}
               </select>
             </div>
-            <div className="field"><label>{t("Tracking number")}</label><input value={form.trackingNumber} onChange={(event) => patch({ trackingNumber: event.target.value })} /></div>
+            <div className="field"><label>{t("Tracking number")}</label><input aria-label={t("Tracking number")} value={form.trackingNumber} onChange={(event) => patch({ trackingNumber: event.target.value })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Containers")}</label><input type="number" min="0" value={form.containers} onChange={(event) => patch({ containers: Number(event.target.value) })} /></div>
+            <div className="field"><label>{t("Containers")}</label><input aria-label={t("Containers")} type="number" min="0" value={form.containers} onChange={(event) => patch({ containers: Number(event.target.value) })} /></div>
             <div className="field">
               <label>{t("Documents status")}</label>
-              <select value={form.documentsStatus} onChange={(event) => patch({ documentsStatus: event.target.value as Status })}>
+              <select aria-label={t("Documents status")} value={form.documentsStatus} onChange={(event) => patch({ documentsStatus: event.target.value as Status })}>
                 {DOCUMENT_STATUSES.map((status) => <option key={status} value={status}>{t(status)}</option>)}
               </select>
             </div>
@@ -204,12 +204,12 @@ export default function Shipments({ state, setState }: Props) {
           <div className="field-row">
             <div className="field">
               <label>{t("Delay risk")}</label>
-              <select value={form.delayRisk} onChange={(event) => patch({ delayRisk: event.target.value as Shipment["delayRisk"] })}>
+              <select aria-label={t("Delay risk")} value={form.delayRisk} onChange={(event) => patch({ delayRisk: event.target.value as Shipment["delayRisk"] })}>
                 {RISK_LEVELS.map((risk) => <option key={risk} value={risk}>{t(risk)}</option>)}
               </select>
             </div>
           </div>
-          <div className="field"><label>{t("Notes")}</label><textarea value={form.notes} onChange={(event) => patch({ notes: event.target.value })} /></div>
+          <div className="field"><label>{t("Notes")}</label><textarea aria-label={t("Notes")} value={form.notes} onChange={(event) => patch({ notes: event.target.value })} /></div>
           <div className="actions">
             <button className="primary" type="button" disabled={!form.reference.trim()} onClick={saveShipment}>
               {editingId ? t("Save changes") : t("Save shipment")}
@@ -242,7 +242,7 @@ export default function Shipments({ state, setState }: Props) {
           <span className="chip neutral">{number(filtered.length)} {t("shown")}</span>
         </div>
         <div className="toolbar">
-          <input
+          <input aria-label={t("Search reference, carrier, route, tracking...")}
             placeholder={t("Search reference, carrier, route, tracking...")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -253,11 +253,7 @@ export default function Shipments({ state, setState }: Props) {
           {filtered.map((shipment) => {
             const risky = shipment.delayRisk === "high" && !["completed", "cancelled"].includes(shipment.status);
             return (
-              <div
-                className="row-card"
-                key={shipment.id}
-                style={risky ? { borderColor: "var(--danger)", background: "#fff7f6" } : undefined}
-              >
+              <div className={`row-card${risky ? " tone-danger" : ""}`} key={shipment.id}>
                 <div className="row-top">
                   <div>
                     <h4>
@@ -281,14 +277,14 @@ export default function Shipments({ state, setState }: Props) {
                   </div>
                 </div>
 
-                <div className="meta" style={{ marginTop: 8 }}>
+                <div className="meta mt-1">
                   <span>{t("Origin port")} <strong>{shipment.originPort || "—"}</strong></span>
                   <span>{t("Destination port")} <strong>{shipment.destinationPort || "—"}</strong></span>
                   <span>{t("Tracking number")} <strong>{shipment.trackingNumber || "—"}</strong></span>
                 </div>
-                {shipment.notes && <p className="muted-text" style={{ marginTop: 8, marginBottom: 0 }}>{shipment.notes}</p>}
+                {shipment.notes && <p className="muted-text mt-1 mb-0">{shipment.notes}</p>}
 
-                <div className="actions" style={{ marginTop: 10 }}>
+                <div className="actions mt-2">
                   <button
                     className="small"
                     type="button"

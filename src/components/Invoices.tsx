@@ -144,7 +144,8 @@ export default function Invoices({ state, setState }: Props) {
       payments: [payment, ...prev.payments],
       invoices: prev.invoices.map((entry) => (entry.id === invoice.id ? updated : entry)),
     }));
-    setPaymentAmounts((prev) => ({ ...prev, [invoice.id]: "" }));
+    const remaining = Math.max(0, updated.amount - updated.paidAmount);
+    setPaymentAmounts((prev) => ({ ...prev, [invoice.id]: remaining > 0 ? String(remaining) : "" }));
   };
 
   return (
@@ -154,7 +155,7 @@ export default function Invoices({ state, setState }: Props) {
           <h2>{t("Invoices")}</h2>
           <p>{t("Issue customer invoices, track balances, and record incoming payments.")}</p>
         </div>
-        <button className="primary" type="button" onClick={resetForm}>{t("New invoice")}</button>
+        <button className="primary" type="button" onClick={resetForm}>{t("Add invoice")}</button>
       </div>
 
       <div className="grid cols-4">
@@ -172,11 +173,11 @@ export default function Invoices({ state, setState }: Props) {
         <div className="field-row">
           <div className="field">
             <label>{t("Invoice number")}</label>
-            <input value={form.number} onChange={(event) => setForm({ ...form, number: event.target.value })} placeholder={t("INV-2026-089")} />
+            <input aria-label={t("Invoice number")} value={form.number} onChange={(event) => setForm({ ...form, number: event.target.value })} placeholder={t("INV-2026-089")} />
           </div>
           <div className="field">
             <label>{t("Customer")}</label>
-            <select value={form.customerId} onChange={(event) => setForm({ ...form, customerId: event.target.value })}>
+            <select aria-label={t("Customer")} value={form.customerId} onChange={(event) => setForm({ ...form, customerId: event.target.value })}>
               {state.customers.map((customer) => (
                 <option key={customer.id} value={customer.id}>{customer.company}</option>
               ))}
@@ -186,7 +187,7 @@ export default function Invoices({ state, setState }: Props) {
         <div className="field-row">
           <div className="field">
             <label>{t("Linked order")}</label>
-            <select value={form.orderId} onChange={(event) => setForm({ ...form, orderId: event.target.value })}>
+            <select aria-label={t("Linked order")} value={form.orderId} onChange={(event) => setForm({ ...form, orderId: event.target.value })}>
               <option value="">{t("No linked order")}</option>
               {state.orders.map((order) => (
                 <option key={order.id} value={order.id}>{order.number}</option>
@@ -195,33 +196,33 @@ export default function Invoices({ state, setState }: Props) {
           </div>
           <div className="field">
             <label>{t("Currency")}</label>
-            <input value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value.toUpperCase() })} maxLength={3} />
+            <input aria-label={t("Currency")} value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value.toUpperCase() })} maxLength={3} />
           </div>
         </div>
         <div className="field-row">
           <div className="field">
             <label>{t("Issue date")}</label>
-            <input type="date" value={form.issueDate} onChange={(event) => setForm({ ...form, issueDate: event.target.value })} />
+            <input aria-label={t("Issue date")} type="date" value={form.issueDate} onChange={(event) => setForm({ ...form, issueDate: event.target.value })} />
           </div>
           <div className="field">
             <label>{t("Due date")}</label>
-            <input type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} />
+            <input aria-label={t("Due date")} type="date" value={form.dueDate} onChange={(event) => setForm({ ...form, dueDate: event.target.value })} />
           </div>
         </div>
         <div className="field-row">
           <div className="field">
             <label>{t("Amount")}</label>
-            <input type="number" min={0} step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: Number(event.target.value) })} />
+            <input aria-label={t("Amount")} type="number" min={0} step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: Number(event.target.value) })} />
           </div>
           <div className="field">
             <label>{t("Paid amount")}</label>
-            <input type="number" min={0} step="0.01" value={form.paidAmount} onChange={(event) => setForm({ ...form, paidAmount: Number(event.target.value) })} />
+            <input aria-label={t("Paid amount")} type="number" min={0} step="0.01" value={form.paidAmount} onChange={(event) => setForm({ ...form, paidAmount: Number(event.target.value) })} />
           </div>
         </div>
         <div className="field-row">
           <div className="field">
             <label>{t("Status")}</label>
-            <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Status })}>
+            <select aria-label={t("Status")} value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Status })}>
               {INVOICE_STATUSES.map((status) => (
                 <option key={status} value={status}>{t(status)}</option>
               ))}
@@ -229,12 +230,12 @@ export default function Invoices({ state, setState }: Props) {
           </div>
           <div className="field">
             <label>{t("Balance")}</label>
-            <input readOnly value={money(Math.max(0, form.amount - form.paidAmount), form.currency)} />
+            <input aria-label={t("Balance")} readOnly value={money(Math.max(0, form.amount - form.paidAmount), form.currency)} />
           </div>
         </div>
         <div className="field">
           <label>{t("Notes")}</label>
-          <textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder={t("Payment terms, reminders, or settlement details")} />
+          <textarea aria-label={t("Notes")} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder={t("Payment terms, reminders, or settlement details")} />
         </div>
         <div className="actions">
           <button className="primary" type="button" onClick={saveInvoice}>{editingId ? t("Save changes") : t("Add invoice")}</button>
@@ -248,8 +249,8 @@ export default function Invoices({ state, setState }: Props) {
           <span className="muted-text">{filteredInvoices.length} / {state.invoices.length} {t("Invoices")}</span>
         </div>
         <div className="toolbar">
-          <input placeholder={t("Search invoices, customers, orders...")} value={query} onChange={(event) => setQuery(event.target.value)} />
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <input aria-label={t("Search invoices, customers, orders...")} placeholder={t("Search invoices, customers, orders...")} value={query} onChange={(event) => setQuery(event.target.value)} />
+          <select aria-label={t("Status")} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option value="all">{t("All statuses")}</option>
             {INVOICE_STATUSES.map((status) => (
               <option key={status} value={status}>{t(status)}</option>
@@ -290,17 +291,17 @@ export default function Invoices({ state, setState }: Props) {
                     )}
                   </div>
                 </div>
-                <div className="meta" style={{ marginTop: 8 }}>
+                <div className="meta mt-1">
                   <span>{t("Billed")} <strong>{money(invoice.amount, invoice.currency)}</strong></span>
                   <span>{t("Paid")} <strong>{money(invoice.paidAmount, invoice.currency)}</strong></span>
                   <span>{t("Balance")} <strong>{money(balance, invoice.currency)}</strong></span>
                 </div>
-                {invoice.notes && <p className="muted-text" style={{ marginTop: 10, marginBottom: 0 }}>{invoice.notes}</p>}
+                {invoice.notes && <p className="muted-text mt-2 mb-0">{invoice.notes}</p>}
                 {balance > 0 && invoice.status !== "cancelled" && (
-                  <div className="actions" style={{ marginTop: 10, alignItems: "flex-end" }}>
-                    <div className="field" style={{ marginBottom: 0, maxWidth: 190 }}>
+                  <div className="actions mt-2 align-end">
+                    <div className="field mb-0 max-190">
                       <label>{t("Payment amount")}</label>
-                      <input
+                      <input aria-label={t("Payment amount")}
                         type="number"
                         min={0}
                         max={balance}

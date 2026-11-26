@@ -13,7 +13,9 @@ export const LANGUAGE_NAMES: Record<Language, string> = {
   zh: "中文",
 };
 
-const en: Record<string, string> = {};
+const en: Record<string, string> = {
+  "App title": "D0K@N Global Distribution — Wholesale & Import Command Center",
+};
 
 const bn: Record<string, string> = {
   // Navigation
@@ -285,8 +287,8 @@ const bn: Record<string, string> = {
   "D0K@N Global Distribution": "ডিওকে@এন গ্লোবাল ডিস্ট্রিবিউশন",
   "D0K@N Global": "ডিওকে@এন গ্লোবাল",
   "Wholesale · Import · Logistics": "পাইকারি · আমদানি · লজিস্টিকস",
-  "Distribution OS v2.0 · local workspace": "ডিস্ট্রিবিউশন ওএস v2.0 · স্থানীয় ওয়ার্কস্পেস",
-  "D0K@N Global Distribution · intelligent wholesale operations · v2.0": "ডিওকে@এন গ্লোবাল ডিস্ট্রিবিউশন · বুদ্ধিমান পাইকারি পরিচালনা · v2.0",
+  "Distribution OS v2.1 · local workspace": "ডিস্ট্রিবিউশন ওএস v2.1 · স্থানীয় ওয়ার্কস্পেস",
+  "D0K@N Global Distribution · intelligent wholesale operations · v2.1": "ডিওকে@এন গ্লোবাল ডিস্ট্রিবিউশন · বুদ্ধিমান পাইকারি পরিচালনা · v2.1",
   "China sourcing, import logistics, wholesale distribution, and intelligent operations control.": "চীন সোর্সিং, আমদানি লজিস্টিকস, পাইকারি বিতরণ এবং বুদ্ধিমান অপারেশন নিয়ন্ত্রণ।",
   "Primary navigation": "প্রাথমিক নেভিগেশন",
   "Application sidebar": "অ্যাপ্লিকেশন সাইডবার",
@@ -593,8 +595,8 @@ const zh: Record<string, string> = {
   "D0K@N Global Distribution": "D0K@N 全球分销",
   "D0K@N Global": "D0K@N 全球",
   "Wholesale · Import · Logistics": "批发 · 进口 · 物流",
-  "Distribution OS v2.0 · local workspace": "分销操作系统 v2.0 · 本地工作区",
-  "D0K@N Global Distribution · intelligent wholesale operations · v2.0": "D0K@N 全球分销 · 智能批发运营 · v2.0",
+  "Distribution OS v2.1 · local workspace": "分销操作系统 v2.1 · 本地工作区",
+  "D0K@N Global Distribution · intelligent wholesale operations · v2.1": "D0K@N 全球分销 · 智能批发运营 · v2.1",
   "China sourcing, import logistics, wholesale distribution, and intelligent operations control.": "中国采购、进口物流、批发分销与智能运营控制。",
   "Primary navigation": "主导航",
   "Application sidebar": "应用侧边栏",

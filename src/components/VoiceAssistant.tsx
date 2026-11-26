@@ -78,6 +78,7 @@ export default function VoiceAssistant({ state, tab, setTab, open, setOpen }: Pr
   const listeningTargetRef = useRef<"command" | "field">("command");
   const targetFieldRef = useRef<FieldTarget | null>(null);
   const activeFieldRef = useRef<ActiveField | null>(null);
+  const statusRef = useRef<Status>(status);
   const retryQueueRef = useRef<SpeechLanguage[]>([]);
   const retryIndexRef = useRef(0);
   const retryTimerRef = useRef<number | null>(null);
@@ -86,6 +87,7 @@ export default function VoiceAssistant({ state, tab, setTab, open, setOpen }: Pr
   const tabRef = useRef(tab);
   const stateRef = useRef(state);
   const speechLangRef = useRef<SpeechLanguage>(language);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const Recognition = getSpeechRecognition();
   const recognitionSupported = Boolean(Recognition);
@@ -95,6 +97,10 @@ export default function VoiceAssistant({ state, tab, setTab, open, setOpen }: Pr
     tabRef.current = tab;
     stateRef.current = state;
   }, [tab, state]);
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   useEffect(() => {
     try {
@@ -198,7 +204,7 @@ export default function VoiceAssistant({ state, tab, setTab, open, setOpen }: Pr
       if (command.type === "help") {
         setOpen(true);
         showFeedback(
-          `${t("Try: open products")} · ${t("Try: summarize dashboard")} · ${t("Try: name Nova X9 Pro")}`,
+          `${t("Try: open products")} · ${t("Try: summarize dashboard")} · ${t("Try: search invoices")}`,
           true,
           speechLang
         );
@@ -246,8 +252,41 @@ export default function VoiceAssistant({ state, tab, setTab, open, setOpen }: Pr
     }
     recognitionRef.current?.stop();
     recognitionRef.current = null;
-    if (status !== "speaking") setStatus("idle");
-  }, [status]);
+    if (statusRef.current !== "speaking") setStatus("idle");
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    panelRef.current?.querySelector<HTMLElement>("button")?.focus();
+    const closePanel = () => {
+      stopListening();
+      setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closePanel();
+        return;
+      }
+      if (event.key !== "Tab" || !panelRef.current) return;
+      const focusables = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((element) => element.offsetParent !== null);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, setOpen, stopListening]);
 
   const launchRecognition = useCallback(
     (lang: SpeechLanguage) => {
@@ -343,9 +382,9 @@ export default function VoiceAssistant({ state, tab, setTab, open, setOpen }: Pr
       setOpen(true);
       const lang = preferred;
       showFeedback(
-        field
-          ? t("Listening in {language}", { language: t(lang === "en" ? "English speech" : lang === "bn" ? "Bengali speech" : "Chinese speech") })
-          : t("Listening in {language}", { language: t(lang === "en" ? "English speech" : lang === "bn" ? "Bengali speech" : "Chinese speech") })
+        t("Listening in {language}", {
+          language: t(lang === "en" ? "English speech" : lang === "bn" ? "Bengali speech" : "Chinese speech"),
+        })
       );
       launchRecognition(lang);
     },
@@ -484,13 +523,18 @@ export default function VoiceAssistant({ state, tab, setTab, open, setOpen }: Pr
 
       {open && (
         <div className="voice-panel-layer" role="dialog" aria-modal="false" aria-label={t("Voice control")}>
-          <div className="voice-panel">
+          <div className="voice-panel" ref={panelRef}>
             <div className="voice-panel-header">
               <div>
                 <strong>{t("Voice assistant")}</strong>
                 <span>{t("Native-language dictation")}</span>
               </div>
-              <button type="button" className="icon-button" onClick={() => setOpen(false)} aria-label={t("Close voice panel")}>
+              <button
+                type="button"
+                className="icon-button"
+                onClick={() => { stopListening(); setOpen(false); }}
+                aria-label={t("Close voice panel")}
+              >
                 ×
               </button>
             </div>
@@ -575,9 +619,19 @@ export default function VoiceAssistant({ state, tab, setTab, open, setOpen }: Pr
               <strong>{t("Voice tip")}</strong>
               <span>{t("Say 'open dashboard', 'summarize this page', or a field name and value.")}</span>
               <div className="voice-example-chips">
-                <button type="button" onClick={() => startListening("command")}>{t("Try: open products")}</button>
-                <button type="button" onClick={() => runSummary()}>{t("Try: summarize dashboard")}</button>
-                <button type="button" onClick={() => startListening("command")}>{t("Try: name Nova X9 Pro")}</button>
+                <button
+                  type="button"
+                  onClick={() => processTranscript("open products", resolveVoiceLanguage(voiceLanguage, language))}
+                >
+                  {t("Try: open products")}
+                </button>
+                <button type="button" onClick={() => runSummary("dashboard")}>{t("Try: summarize dashboard")}</button>
+                <button
+                  type="button"
+                  onClick={() => processTranscript("search invoices", resolveVoiceLanguage(voiceLanguage, language))}
+                >
+                  {t("Try: search invoices")}
+                </button>
               </div>
             </div>
 

@@ -171,10 +171,10 @@ export default function Settings({ state, setState, device, previewOverride, set
         </div>
         <div className="field">
           <label>{t("Backup JSON")}</label>
-          <textarea
+          <textarea aria-label={t("Backup JSON")}
+            className="backup-textarea"
             value={importText}
             onChange={(event) => setImportText(event.target.value)}
-            style={{ minHeight: 140 }}
             placeholder={t('Paste JSON backup here, e.g. {"company":{...},"products":[...],"orders":[...]}')}
           />
         </div>
@@ -198,7 +198,7 @@ export default function Settings({ state, setState, device, previewOverride, set
         </div>
         <div className="meta-list">
           <span>{t("Version")}</span>
-          <strong>2.0.0</strong>
+          <strong>2.1.0</strong>
           <span>{t("Storage key")}</span>
           <strong>{STORAGE_KEY}</strong>
           <span>{t("Preview key")}</span>
