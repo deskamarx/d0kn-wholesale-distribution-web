@@ -1,9 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { AppState, Invoice, Payment, Status } from "../types";
 import { compactMoney, daysUntil, money, shortDate } from "../lib/format";
 import { uid, upsert } from "../lib/store";
 import { useLanguage } from "../i18n";
+import { duplicateExists, readErrorsAloud, useDirtyForm } from "../lib/forms";
+import { EmptyState, RequiredProgress, ValidationSummary } from "./Common";
+import { useToast, useUndoDelete } from "./Feedback";
 import { Metric, StatusChip } from "./Ui";
 
 interface Props {
@@ -17,15 +20,33 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function blankInvoice(customerId: string, orderId: string, currency: string): Invoice {
+function plusDays(iso: string, days: number): string {
+  const date = new Date(`${iso}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function nextInvoiceNumber(invoices: Invoice[]): string {
+  const year = new Date().getFullYear();
+  const used = invoices.map((invoice) => invoice.number).filter(Boolean);
+  let sequence = used.length + 1;
+  let candidate = `INV-${year}-${String(sequence).padStart(3, "0")}`;
+  while (used.includes(candidate)) {
+    sequence += 1;
+    candidate = `INV-${year}-${String(sequence).padStart(3, "0")}`;
+  }
+  return candidate;
+}
+
+function blankInvoice(customerId: string, orderId: string, currency: string, invoices: Invoice[] = []): Invoice {
   const today = todayISO();
   return {
     id: "",
-    number: "",
+    number: nextInvoiceNumber(invoices),
     customerId,
     orderId,
     issueDate: today,
-    dueDate: today,
+    dueDate: plusDays(today, 30),
     amount: 0,
     paidAmount: 0,
     currency,
@@ -51,19 +72,28 @@ function overdueDays(invoice: Invoice): number {
 }
 
 export default function Invoices({ state, setState }: Props) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { notify } = useToast();
+  const undoDelete = useUndoDelete();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [form, setForm] = useState<Invoice>(() =>
-    blankInvoice(state.customers[0]?.id ?? "", state.orders[0]?.id ?? "", state.company.defaultCurrency)
+    blankInvoice(state.customers[0]?.id ?? "", state.orders[0]?.id ?? "", state.company.defaultCurrency, state.invoices)
   );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<string[]>([]);
+  const [formKey, setFormKey] = useState(0);
+  const recordingPayments = useRef(new Set<string>());
+  const { confirmDiscard } = useDirtyForm(form, `${editingId ?? "new"}-${formKey}`);
 
-  const resetForm = () => {
-    setForm(blankInvoice(state.customers[0]?.id ?? "", state.orders[0]?.id ?? "", state.company.defaultCurrency));
+  const resetForm = (force = false) => {
+    if (!force && !confirmDiscard(t("Discard unsaved changes?"))) return;
+    setForm(blankInvoice(state.customers[0]?.id ?? "", state.orders[0]?.id ?? "", state.company.defaultCurrency, state.invoices));
+    setErrors([]);
     setEditingId(null);
+    setFormKey((current) => current + 1);
   };
 
   const customerName = (id: string) => state.customers.find((entry) => entry.id === id)?.company ?? t("Unknown customer");
@@ -96,7 +126,20 @@ export default function Invoices({ state, setState }: Props) {
   }, [state.invoices, state.customers, state.orders, query, statusFilter]);
 
   const saveInvoice = () => {
-    if (!form.number.trim() || !form.customerId || form.amount <= 0) return;
+    const found: string[] = [];
+    if (!form.number.trim()) found.push(t("Invoice number is required"));
+    if (!form.customerId) found.push(t("Customer is required"));
+    if (form.amount <= 0) found.push(t("Amount must be greater than zero"));
+    if (duplicateExists(state.invoices, "number", form.number, editingId ?? undefined)) {
+      found.push(t("An invoice with this number already exists"));
+    }
+    if (!form.issueDate || !form.dueDate) found.push(t("Issue date and due date are required"));
+    if (found.length) {
+      setErrors(found);
+      void readErrorsAloud(found, language);
+      return;
+    }
+    setErrors([]);
     const paidAmount = form.status === "paid" ? form.amount : Math.min(Math.max(form.paidAmount, 0), form.amount);
     const next: Invoice = {
       ...form,
@@ -107,26 +150,35 @@ export default function Invoices({ state, setState }: Props) {
     };
     next.status = resolveStatus(next);
     setState((prev) => ({ ...prev, invoices: upsert(prev.invoices, next) }));
-    resetForm();
+    resetForm(true);
   };
 
   const startEdit = (invoice: Invoice) => {
     setForm({ ...invoice });
+    setErrors([]);
     setEditingId(invoice.id);
     setPendingDeleteId(null);
+    setFormKey((current) => current + 1);
   };
 
   const deleteInvoice = (id: string) => {
-    setState((prev) => ({ ...prev, invoices: prev.invoices.filter((invoice) => invoice.id !== id) }));
+    const invoice = state.invoices.find((entry) => entry.id === id);
+    if (!invoice) return;
+    undoDelete(
+      () => setState((prev) => ({ ...prev, invoices: prev.invoices.filter((entry) => entry.id !== id) })),
+      () => setState((prev) => ({ ...prev, invoices: upsert(prev.invoices, invoice) }))
+    );
     setPendingDeleteId(null);
-    if (editingId === id) resetForm();
+    if (editingId === id) resetForm(true);
   };
 
   const recordPayment = (invoice: Invoice) => {
+    if (recordingPayments.current.has(invoice.id)) return;
     const balance = Math.max(0, invoice.amount - invoice.paidAmount);
     const raw = paymentAmounts[invoice.id] ?? String(balance);
     const amount = Math.min(Math.max(Number(raw) || 0, 0), balance);
     if (amount <= 0) return;
+    recordingPayments.current.add(invoice.id);
     const payment: Payment = {
       id: uid("PAY"),
       invoiceId: invoice.id,
@@ -137,15 +189,24 @@ export default function Invoices({ state, setState }: Props) {
       status: "completed",
       notes: t("Quick payment recorded against {number}.", { number: invoice.number }),
     };
-    const updated: Invoice = { ...invoice, paidAmount: Math.min(invoice.amount, invoice.paidAmount + amount) };
-    updated.status = resolveStatus(updated);
-    setState((prev) => ({
-      ...prev,
-      payments: [payment, ...prev.payments],
-      invoices: prev.invoices.map((entry) => (entry.id === invoice.id ? updated : entry)),
-    }));
-    const remaining = Math.max(0, updated.amount - updated.paidAmount);
+    const nextPaidAmount = Math.min(invoice.amount, invoice.paidAmount + amount);
+    const remaining = Math.max(0, invoice.amount - nextPaidAmount);
+    setState((prev) => {
+      const current = prev.invoices.find((entry) => entry.id === invoice.id) ?? invoice;
+      const updated: Invoice = {
+        ...current,
+        paidAmount: Math.min(current.amount, current.paidAmount + amount),
+      };
+      updated.status = resolveStatus(updated);
+      return {
+        ...prev,
+        payments: [payment, ...prev.payments],
+        invoices: prev.invoices.map((entry) => (entry.id === invoice.id ? updated : entry)),
+      };
+    });
     setPaymentAmounts((prev) => ({ ...prev, [invoice.id]: remaining > 0 ? String(remaining) : "" }));
+    notify(`${t("Payment recorded")}: ${money(amount, invoice.currency)} · ${invoice.number}`, { tone: "success" });
+    window.setTimeout(() => recordingPayments.current.delete(invoice.id), 0);
   };
 
   return (
@@ -155,7 +216,7 @@ export default function Invoices({ state, setState }: Props) {
           <h2>{t("Invoices")}</h2>
           <p>{t("Issue customer invoices, track balances, and record incoming payments.")}</p>
         </div>
-        <button className="primary" type="button" onClick={resetForm}>{t("Add invoice")}</button>
+        <button className="primary" type="button" onClick={() => resetForm()}>{t("Add invoice")}</button>
       </div>
 
       <div className="grid cols-4">
@@ -169,6 +230,16 @@ export default function Invoices({ state, setState }: Props) {
         <div className="section-title">
           <h3>{editingId ? t("Edit invoice") : t("New invoice")}</h3>
           {editingId && <span className="muted-text">{t("Editing")} {form.number}</span>}
+        </div>
+        <ValidationSummary errors={errors} />
+        <RequiredProgress
+          complete={(form.number.trim() ? 1 : 0) + (form.customerId ? 1 : 0) + (form.amount > 0 ? 1 : 0)}
+          total={3}
+        />
+        <div className="inline-calculator" aria-live="polite">
+          <div><span>{t("Balance")}</span><strong>{money(Math.max(0, form.amount - form.paidAmount), form.currency)}</strong></div>
+          <div><span>{t("Due date")}</span><strong>{form.dueDate ? shortDate(form.dueDate) : "—"}</strong></div>
+          <div><span>{t("Status")}</span><strong>{t(resolveStatus(form))}</strong></div>
         </div>
         <div className="field-row">
           <div className="field">
@@ -239,7 +310,7 @@ export default function Invoices({ state, setState }: Props) {
         </div>
         <div className="actions">
           <button className="primary" type="button" onClick={saveInvoice}>{editingId ? t("Save changes") : t("Add invoice")}</button>
-          {editingId && <button type="button" onClick={resetForm}>{t("Cancel")}</button>}
+          {editingId && <button type="button" onClick={() => resetForm()}>{t("Cancel")}</button>}
         </div>
       </div>
 
@@ -258,12 +329,23 @@ export default function Invoices({ state, setState }: Props) {
           </select>
         </div>
         <div className="list">
-          {filteredInvoices.length === 0 && <div className="empty">{t("No invoices match the current filter.")}</div>}
+          {filteredInvoices.length === 0 && (
+            <EmptyState
+              title={t("No invoices match the current filter.")}
+              description={t("Try another status or search term, or issue the first invoice above.")}
+              actionLabel={query || statusFilter !== "all" ? t("Clear filters") : undefined}
+              onAction={query || statusFilter !== "all" ? () => { setQuery(""); setStatusFilter("all"); } : undefined}
+            />
+          )}
           {filteredInvoices.map((invoice) => {
             const balance = Math.max(0, invoice.amount - invoice.paidAmount);
             const daysOverdue = overdueDays(invoice);
             return (
-              <div className="row-card" key={invoice.id}>
+              <div
+                className="row-card"
+                key={invoice.id}
+                data-preview={`${invoice.number} · ${customerName(invoice.customerId)} · ${t("Balance")} ${money(balance, invoice.currency)}`}
+              >
                 <div className="row-top">
                   <div>
                     <h4>{invoice.number}</h4>

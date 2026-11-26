@@ -4,6 +4,9 @@ import type { AppState, Invoice, Payment, Status } from "../types";
 import { compactMoney, daysUntil, money, shortDate } from "../lib/format";
 import { uid, upsert } from "../lib/store";
 import { useLanguage } from "../i18n";
+import { readErrorsAloud, useDirtyForm } from "../lib/forms";
+import { EmptyState, RequiredProgress, ValidationSummary } from "./Common";
+import { useToast, useUndoDelete } from "./Feedback";
 import { Metric, StatusChip } from "./Ui";
 
 interface Props {
@@ -18,12 +21,12 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function blankPayment(invoiceId: string): Payment {
+function blankPayment(invoiceId: string, amount = 0): Payment {
   return {
     id: "",
     invoiceId,
     date: todayISO(),
-    amount: 0,
+    amount,
     method: STANDARD_METHODS[0],
     reference: "",
     status: "completed",
@@ -53,22 +56,38 @@ function applyPaymentDelta(invoices: Invoice[], payment: Payment | undefined, si
 }
 
 export default function Payments({ state, setState }: Props) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { notify } = useToast();
+  const undoDelete = useUndoDelete();
+  const firstInvoiceBalance = (() => {
+    const invoice = state.invoices[0];
+    return invoice ? Math.max(0, invoice.amount - invoice.paidAmount) : 0;
+  })();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [methodFilter, setMethodFilter] = useState("all");
-  const [form, setForm] = useState<Payment>(() => blankPayment(state.invoices[0]?.id ?? ""));
+  const [form, setForm] = useState<Payment>(() => blankPayment(state.invoices[0]?.id ?? "", firstInvoiceBalance));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [formKey, setFormKey] = useState(0);
+  const { confirmDiscard } = useDirtyForm(form, `${editingId ?? "new"}-${formKey}`);
 
-  const resetForm = () => {
-    setForm(blankPayment(state.invoices[0]?.id ?? ""));
+  const resetForm = (force = false) => {
+    if (!force && !confirmDiscard(t("Discard unsaved changes?"))) return;
+    setForm(blankPayment(state.invoices[0]?.id ?? "", firstInvoiceBalance));
+    setErrors([]);
     setEditingId(null);
+    setFormKey((current) => current + 1);
   };
 
   const invoiceFor = (id: string) => state.invoices.find((entry) => entry.id === id);
   const invoiceNumber = (id: string) => invoiceFor(id)?.number ?? "—";
   const currencyFor = (id: string) => invoiceFor(id)?.currency ?? state.company.defaultCurrency;
+  const invoiceBalance = (id: string): number => {
+    const invoice = invoiceFor(id);
+    return invoice ? Math.max(0, invoice.amount - invoice.paidAmount) : 0;
+  };
 
   const methods = useMemo(
     () => Array.from(new Set([...STANDARD_METHODS, ...state.payments.map((payment) => payment.method).filter(Boolean)])),
@@ -104,7 +123,25 @@ export default function Payments({ state, setState }: Props) {
   }, [state.payments, state.invoices, state.customers, query, statusFilter, methodFilter]);
 
   const savePayment = () => {
-    if (!form.invoiceId || form.amount <= 0) return;
+    const found: string[] = [];
+    if (!form.invoiceId) found.push(t("Invoice is required"));
+    if (form.amount <= 0) found.push(t("Amount must be greater than zero"));
+    if (form.invoiceId) {
+      const previous = state.payments.find((payment) => payment.id === editingId);
+      const wasApplied =
+        previous?.status === "completed" && previous.invoiceId === form.invoiceId ? previous.amount : 0;
+      const available = invoiceBalance(form.invoiceId) + wasApplied;
+      if (form.amount > available) {
+        if (available <= 0) found.push(t("This invoice is already fully paid"));
+        else found.push(t("Amount cannot exceed the invoice balance of {amount}.", { amount: money(available, currencyFor(form.invoiceId)) }));
+      }
+    }
+    if (found.length) {
+      setErrors(found);
+      void readErrorsAloud(found, language);
+      return;
+    }
+    setErrors([]);
     const next: Payment = {
       ...form,
       id: editingId ?? uid("PAY"),
@@ -121,26 +158,35 @@ export default function Payments({ state, setState }: Props) {
       );
       return { ...prev, payments: upsert(prev.payments, next), invoices };
     });
-    resetForm();
+    notify(`${t("Payment recorded")}: ${money(next.amount, currencyFor(next.invoiceId))} · ${invoiceNumber(next.invoiceId)}`, { tone: "success" });
+    resetForm(true);
   };
 
   const startEdit = (payment: Payment) => {
     setForm({ ...payment });
+    setErrors([]);
     setEditingId(payment.id);
     setPendingDeleteId(null);
+    setFormKey((current) => current + 1);
   };
 
   const deletePayment = (id: string) => {
-    setState((prev) => {
-      const payment = prev.payments.find((entry) => entry.id === id);
-      return {
+    const payment = state.payments.find((entry) => entry.id === id);
+    if (!payment) return;
+    undoDelete(
+      () => setState((prev) => ({
         ...prev,
         payments: prev.payments.filter((entry) => entry.id !== id),
         invoices: applyPaymentDelta(prev.invoices, payment, -1),
-      };
-    });
+      })),
+      () => setState((prev) => ({
+        ...prev,
+        payments: upsert(prev.payments, payment),
+        invoices: applyPaymentDelta(prev.invoices, payment, 1),
+      }))
+    );
     setPendingDeleteId(null);
-    if (editingId === id) resetForm();
+    if (editingId === id) resetForm(true);
   };
 
   return (
@@ -150,7 +196,7 @@ export default function Payments({ state, setState }: Props) {
           <h2>{t("Payments")}</h2>
           <p>{t("Record and reconcile customer receipts against invoices.")}</p>
         </div>
-        <button className="primary" type="button" onClick={resetForm}>{t("Add payment")}</button>
+        <button className="primary" type="button" onClick={() => resetForm()}>{t("Add payment")}</button>
       </div>
 
       <div className="grid cols-4">
@@ -165,10 +211,24 @@ export default function Payments({ state, setState }: Props) {
           <h3>{editingId ? t("Edit payment") : t("New payment")}</h3>
           {editingId && <span className="muted-text">{t("Editing")} {form.reference || form.id}</span>}
         </div>
+        <ValidationSummary errors={errors} />
+        <RequiredProgress
+          complete={(form.invoiceId ? 1 : 0) + (form.amount > 0 ? 1 : 0)}
+          total={2}
+        />
+        <div className="inline-calculator" aria-live="polite">
+          <div><span>{t("Invoice balance")}</span><strong>{money(invoiceBalance(form.invoiceId), currencyFor(form.invoiceId))}</strong></div>
+          <div><span>{t("Remaining after this payment")}</span><strong>{money(Math.max(0, invoiceBalance(form.invoiceId) - form.amount), currencyFor(form.invoiceId))}</strong></div>
+          <div><span>{t("Method")}</span><strong>{form.method}</strong></div>
+        </div>
         <div className="field-row">
           <div className="field">
             <label>{t("Invoice")}</label>
-            <select aria-label={t("Invoice")} value={form.invoiceId} onChange={(event) => setForm({ ...form, invoiceId: event.target.value })}>
+            <select aria-label={t("Invoice")} value={form.invoiceId} onChange={(event) => {
+              const invoiceId = event.target.value;
+              setForm({ ...form, invoiceId, amount: invoiceBalance(invoiceId) });
+              setErrors([]);
+            }}>
               <option value="">{t("Select invoice")}</option>
               {state.invoices.map((invoice) => (
                 <option key={invoice.id} value={invoice.id}>{invoice.number}</option>
@@ -214,7 +274,7 @@ export default function Payments({ state, setState }: Props) {
         </div>
         <div className="actions">
           <button className="primary" type="button" onClick={savePayment}>{editingId ? t("Save changes") : t("Add payment")}</button>
-          {editingId && <button type="button" onClick={resetForm}>{t("Cancel")}</button>}
+          {editingId && <button type="button" onClick={() => resetForm()}>{t("Cancel")}</button>}
         </div>
       </div>
 
@@ -239,12 +299,25 @@ export default function Payments({ state, setState }: Props) {
           </select>
         </div>
         <div className="list">
-          {filteredPayments.length === 0 && <div className="empty">{t("No payments match the current filter.")}</div>}
+          {filteredPayments.length === 0 && (
+            <EmptyState
+              title={t("No payments match the current filter.")}
+              description={t("Try another status or method, or record the first receipt above.")}
+              actionLabel={query || statusFilter !== "all" || methodFilter !== "all" ? t("Clear filters") : undefined}
+              onAction={query || statusFilter !== "all" || methodFilter !== "all"
+                ? () => { setQuery(""); setStatusFilter("all"); setMethodFilter("all"); }
+                : undefined}
+            />
+          )}
           {filteredPayments.map((payment) => {
             const invoice = invoiceFor(payment.invoiceId);
             const customer = state.customers.find((entry) => entry.id === invoice?.customerId)?.company ?? t("Unknown customer");
             return (
-              <div className="row-card" key={payment.id}>
+              <div
+                className="row-card"
+                key={payment.id}
+                data-preview={`${invoiceNumber(payment.invoiceId)} · ${customer} · ${payment.method}`}
+              >
                 <div className="row-top">
                   <div>
                     <h4>{invoiceNumber(payment.invoiceId)} · {money(payment.amount, currencyFor(payment.invoiceId))}</h4>

@@ -1,13 +1,33 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import { LanguageProvider } from "./i18n";
+import { LanguageProvider, useLanguage } from "./i18n";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { ToastProvider } from "./components/Feedback";
 import "./styles.css";
+
+function Root() {
+  const { t } = useLanguage();
+  return (
+    <ErrorBoundary
+      labels={{
+        title: t("Something went wrong"),
+        description: t("The workspace hit an unexpected error. Your saved records are safe; try recovering the view."),
+        reload: t("Reload app"),
+        reset: t("Try again"),
+      }}
+    >
+      <ToastProvider>
+        <App />
+      </ToastProvider>
+    </ErrorBoundary>
+  );
+}
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <LanguageProvider>
-      <App />
+      <Root />
     </LanguageProvider>
   </React.StrictMode>
 );

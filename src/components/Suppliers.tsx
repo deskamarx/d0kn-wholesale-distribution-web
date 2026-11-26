@@ -5,6 +5,9 @@ import { number } from "../lib/format";
 import { getSupplierScore } from "../lib/intelligence";
 import { removeById, uid, updateById, upsert } from "../lib/store";
 import { useLanguage } from "../i18n";
+import { duplicateExists, readErrorsAloud, useDirtyForm } from "../lib/forms";
+import { EmptyState, RequiredProgress, ValidationSummary } from "./Common";
+import { useUndoDelete } from "./Feedback";
 import { Metric, ProgressBar, StatusChip } from "./Ui";
 
 interface Props {
@@ -39,10 +42,13 @@ function emptySupplier(): SupplierForm {
 }
 
 export default function Suppliers({ state, setState }: Props) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<SupplierForm>(emptySupplier);
+  const [errors, setErrors] = useState<string[]>([]);
+  const undoDelete = useUndoDelete();
+  const { confirmDiscard } = useDirtyForm(form, showForm ? editingId ?? "new" : "closed");
 
   const scorecard = useMemo(
     () =>
@@ -62,25 +68,52 @@ export default function Suppliers({ state, setState }: Props) {
   const patch = (changes: Partial<SupplierForm>) => setForm((prev) => ({ ...prev, ...changes }));
 
   const openAdd = () => {
-    setForm(emptySupplier());
+    const recent = state.suppliers[0];
+    setForm({
+      ...emptySupplier(),
+      country: recent?.country || "China",
+      city: recent?.city || "",
+      paymentTerms: recent?.paymentTerms || "",
+      incoterm: recent?.incoterm || "FOB Shenzhen",
+    });
+    setErrors([]);
     setEditingId(null);
     setShowForm(true);
   };
 
   const startEdit = (supplier: Supplier) => {
     setForm({ ...supplier });
+    setErrors([]);
     setEditingId(supplier.id);
     setShowForm(true);
   };
 
-  const closeForm = () => {
+  const closeForm = (force = false) => {
+    if (force !== true && !confirmDiscard(t("Discard unsaved changes?"))) return;
     setForm(emptySupplier());
+    setErrors([]);
     setEditingId(null);
     setShowForm(false);
   };
 
   const saveSupplier = () => {
-    if (!form.name.trim()) return;
+    const found: string[] = [];
+    if (!form.name.trim()) found.push(t("Name is required"));
+    if (duplicateExists(state.suppliers, "name", form.name, editingId ?? undefined)) {
+      found.push(t("A supplier with this name already exists"));
+    }
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      found.push(t("Enter a valid email address"));
+    }
+    if (form.reliability < 0 || form.reliability > 100 || form.qualityScore < 0 || form.qualityScore > 100) {
+      found.push(t("Reliability and quality must be between 0 and 100"));
+    }
+    if (found.length) {
+      setErrors(found);
+      void readErrorsAloud(found, language);
+      return;
+    }
+    setErrors([]);
     const supplier: Supplier = {
       ...form,
       id: editingId ?? uid("SUP"),
@@ -95,13 +128,20 @@ export default function Suppliers({ state, setState }: Props) {
       notes: form.notes.trim(),
     };
     setState((prev) => ({ ...prev, suppliers: upsert(prev.suppliers, supplier) }));
-    closeForm();
+    closeForm(true);
   };
 
   const removeSupplier = (id: string) => {
-    if (!window.confirm(t("Delete this supplier? Linked products and imports will keep their reference."))) return;
-    setState((prev) => ({ ...prev, suppliers: removeById(prev.suppliers, id) }));
-    if (editingId === id) closeForm();
+    const supplier = state.suppliers.find((item) => item.id === id);
+    if (!supplier || !window.confirm(t("Delete this supplier? Linked products and imports will keep their reference."))) return;
+    undoDelete(
+      () => setState((prev) => ({ ...prev, suppliers: removeById(prev.suppliers, id) })),
+      () => setState((prev) => ({ ...prev, suppliers: upsert(prev.suppliers, supplier) }))
+    );
+    if (editingId === id) {
+      setEditingId(null);
+      setShowForm(false);
+    }
   };
 
   const toggleStatus = (supplier: Supplier) => {
@@ -127,16 +167,18 @@ export default function Suppliers({ state, setState }: Props) {
         <section className="card">
           <div className="section-title">
             <h3>{editingId ? t("Edit supplier") : t("Add supplier")}</h3>
-            <button className="small" type="button" onClick={closeForm}>{t("Cancel")}</button>
+            <button className="small" type="button" onClick={() => closeForm()}>{t("Cancel")}</button>
           </div>
           <p className="muted-text">{t("Score inputs directly affect the partner scorecard and review flags.")}</p>
+          <ValidationSummary errors={errors} />
+          <RequiredProgress complete={form.name.trim() ? 1 : 0} total={1} />
 
           <div className="field-row">
             <div className="field"><label>{t("Name")}</label><input aria-label={t("Name")} value={form.name} onChange={(event) => patch({ name: event.target.value })} /></div>
             <div className="field"><label>{t("Chinese name")}</label><input aria-label={t("Chinese name")} value={form.chineseName} onChange={(event) => patch({ chineseName: event.target.value })} /></div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("City")}</label><input aria-label={t("City")} value={form.city} onChange={(event) => patch({ city: event.target.value })} /></div>
+            <div className="field"><label>{t("City")}</label><input list="d0kn-cities" aria-label={t("City")} value={form.city} onChange={(event) => patch({ city: event.target.value })} /></div>
             <div className="field"><label>{t("Country")}</label><input aria-label={t("Country")} value={form.country} onChange={(event) => patch({ country: event.target.value })} /></div>
           </div>
           <div className="field-row">
@@ -177,7 +219,7 @@ export default function Suppliers({ state, setState }: Props) {
             <button className="primary" type="button" disabled={!form.name.trim()} onClick={saveSupplier}>
               {editingId ? t("Save changes") : t("Save supplier")}
             </button>
-            <button type="button" onClick={closeForm}>{t("Cancel")}</button>
+            <button type="button" onClick={() => closeForm()}>{t("Cancel")}</button>
           </div>
         </section>
       )}
@@ -201,7 +243,12 @@ export default function Suppliers({ state, setState }: Props) {
         </div>
         <p className="muted-text">{t("Composite score blends reliability, quality, lead time, and compliance status.")}</p>
         {scorecard.length === 0 ? (
-          <div className="empty">{t("No suppliers to score yet.")}</div>
+          <EmptyState
+            title={t("No suppliers to score yet.")}
+            description={t("Add a partner to start building the scorecard.")}
+            actionLabel={t("Add supplier")}
+            onAction={openAdd}
+          />
         ) : (
           <div className="table-wrap">
             <table>
@@ -243,11 +290,22 @@ export default function Suppliers({ state, setState }: Props) {
           <span className="chip neutral">{number(state.suppliers.length)} {t("partners")}</span>
         </div>
         <div className="list">
-          {state.suppliers.length === 0 && <div className="empty">{t("No suppliers found. Add your first partner above.")}</div>}
+          {state.suppliers.length === 0 && (
+            <EmptyState
+              title={t("No suppliers found. Add your first partner above.")}
+              description={t("Partners are used by products, imports and scorecards.")}
+              actionLabel={t("Add supplier")}
+              onAction={openAdd}
+            />
+          )}
           {state.suppliers.map((supplier) => {
             const score = getSupplierScore(supplier);
             return (
-              <div className="row-card" key={supplier.id}>
+              <div
+                className="row-card"
+                key={supplier.id}
+                data-preview={`${supplier.name} · ${supplier.city || t("City")} · ${t("Score")} ${score}/100`}
+              >
                 <div className="row-top">
                   <div>
                     <h4>{supplier.name} <span className="chip neutral">{supplier.city || "—"}</span></h4>

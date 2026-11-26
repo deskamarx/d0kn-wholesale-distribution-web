@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { App as CapacitorApp } from "@capacitor/app";
 import Dashboard from "./components/Dashboard";
 import Intelligence from "./components/Intelligence";
 import Analytics from "./components/Analytics";
@@ -17,13 +18,21 @@ import Search from "./components/Search";
 import Settings from "./components/Settings";
 import NavIcon, { type NavIconName } from "./components/NavIcon";
 import VoiceAssistant from "./components/VoiceAssistant";
+import DataLists from "./components/DataLists";
+import { InstallPrompt, ModuleGuideDialog, ShortcutDialog, WhatsNewDialog } from "./components/Overlays";
 import { useDeviceProfile, type PreviewMode } from "./hooks/useDeviceProfile";
 import { LANGUAGE_NAMES, useLanguage, type Language } from "./i18n";
+import { applyPreferences, CHANGELOG_ID, loadPreferences, savePreferences, type Preferences } from "./lib/preferences";
 import { initialState } from "./seed";
 import type { AppState } from "./types";
 
 const STORAGE_KEY = "d0kn-distribution-v1";
 const THEME_KEY = "d0kn-distribution-theme-v1";
+
+interface InstallEventLike {
+  prompt: () => void;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
 
 type Theme = "light" | "dark";
 
@@ -106,6 +115,78 @@ const NAV_GROUPS: NavGroup[] = [
 const ALL_NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items);
 const PRIMARY_MOBILE_TABS = ["dashboard", "products", "orders", "search"];
 
+const MODULE_GUIDES: Record<string, { description: string; points: string[] }> = {
+  dashboard: {
+    description: "A live snapshot of stock, receivables, shipments and the actions that need attention today.",
+    points: ["Numbers come from records saved in this browser", "Use the cards to jump into the related module", "Voice summary reads the current snapshot aloud"],
+  },
+  intelligence: {
+    description: "Cross-module signals that highlight risk, opportunity and the next sensible action.",
+    points: ["Signals are recalculated from local records", "Open a signal to inspect the source module", "Low-stock and overdue signals update as you edit"],
+  },
+  analytics: {
+    description: "Charts and breakdowns for category mix, order value, cash position and partner quality.",
+    points: ["Figures use the interface language and currency", "Charts follow the active light or dark theme", "Drill into the linked modules to change the inputs"],
+  },
+  suppliers: {
+    description: "China sourcing partners, contact channels, commercial terms and composite scorecards.",
+    points: ["Reliability, quality, lead time and compliance drive the score", "Add a partner before linking products to it", "Scores below 85 are flagged for review"],
+  },
+  products: {
+    description: "Catalogue, landed cost inputs, pricing, stock thresholds and sourcing references.",
+    points: ["SKU is the product's unique local reference", "Reorder point drives low-stock signals", "Cost and price feed margin calculations"],
+  },
+  imports: {
+    description: "Import batches, supplier invoices, duty, freight, insurance and item-level costs.",
+    points: ["Exchange rate converts source currency for reporting", "Item costs feed landed-cost visibility", "Customs status is tracked separately from batch status"],
+  },
+  shipments: {
+    description: "Containers, carriers, milestones, documents and delay-risk indicators.",
+    points: ["Each shipment links to an import batch", "Documents status is tracked separately", "Delay risk can be reviewed against the source record"],
+  },
+  warehouse: {
+    description: "Warehouse capacity and stock movements across inbound, outbound and transfers.",
+    points: ["Used capacity is calculated from recorded stock", "Movements retain their own reference", "Warehouses are shared by orders and imports"],
+  },
+  customers: {
+    description: "Wholesale accounts, contacts, credit limits and payment terms.",
+    points: ["Credit limit is used by order review", "Customer type groups reporting segments", "Contact details are used on quotations and invoices"],
+  },
+  quotations: {
+    description: "Sent and approved price proposals with validity dates and line-item pricing.",
+    points: ["Convert an accepted quotation into an order", "Validity drives expiry signals", "Line totals include quantity, price and discount"],
+  },
+  orders: {
+    description: "Customer orders, warehouse assignment, shipping status and line-level totals.",
+    points: ["Stock is reserved conceptually by recorded quantities", "Order status is independent of shipping status", "Invoices can be linked back to an order"],
+  },
+  invoices: {
+    description: "Billed amounts, due dates, partial payments and receivable status.",
+    points: ["Paid amount is the sum of recorded payments", "Due date drives overdue signals", "Quick payment records a new payment instantly"],
+  },
+  payments: {
+    description: "Receipts allocated to invoices with method, reference and status.",
+    points: ["Each payment links to one invoice", "Methods are local labels, not bank integrations", "Recording a payment updates the invoice balance"],
+  },
+  compliance: {
+    description: "Customs, licences, certificates, insurance, audits and contracts with expiry tracking.",
+    points: ["Records can reference any workspace entity", "Expiry dates drive renewal signals", "Status can be changed without losing history"],
+  },
+  search: {
+    description: "One search box across suppliers, products, imports, customers and documents.",
+    points: ["Search is local and works offline", "Results link directly to their module", "Voice search can be started from the voice panel"],
+  },
+  settings: {
+    description: "Local display preferences, language, install guidance, backup and restore.",
+    points: ["All data stays in this browser", "Export a backup before clearing browser data", "Android and web storage are separate by design"],
+  },
+};
+
+const SHORTCUT_MODULES = [
+  "dashboard", "intelligence", "analytics", "suppliers", "products",
+  "imports", "shipments", "warehouse", "customers", "quotations",
+];
+
 function loadState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -126,12 +207,39 @@ function tabFromHash(): string {
   return ALL_NAV_ITEMS.some((item) => item.id === id) ? id : "dashboard";
 }
 
+function BootSkeleton() {
+  return (
+    <div className="boot-skeleton" aria-hidden="true">
+      <div className="skeleton skeleton-title" />
+      <div className="skeleton skeleton-grid">
+        <div className="skeleton" /><div className="skeleton" /><div className="skeleton" /><div className="skeleton" />
+      </div>
+      <div className="skeleton skeleton-panel" />
+      <div className="skeleton skeleton-panel short" />
+    </div>
+  );
+}
+
 export default function App() {
   const [state, setState] = useState<AppState>(loadState);
   const [tab, setTabState] = useState<string>(tabFromHash);
   const [moreOpen, setMoreOpen] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(loadTheme);
+  const initialPreferences = useRef<Preferences | null>(null);
+  if (initialPreferences.current === null) initialPreferences.current = loadPreferences();
+  const [preferences, setPreferences] = useState<Preferences>(() => ({
+    ...initialPreferences.current!,
+    lastChangelog: CHANGELOG_ID,
+  }));
+  const [booting, setBooting] = useState(true);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [whatsNewOpen, setWhatsNewOpen] = useState(() => {
+    const previous = initialPreferences.current?.lastChangelog;
+    return previous !== CHANGELOG_ID;
+  });
+  const [installEvent, setInstallEvent] = useState<InstallEventLike | null>(null);
   const moreSheetRef = useRef<HTMLDivElement>(null);
   const { device, previewOverride, setPreviewOverride } = useDeviceProfile();
   const { language, setLanguage, t } = useLanguage();
@@ -139,6 +247,11 @@ export default function App() {
   const setTab = useCallback((next: string) => {
     setTabState(next);
     setMoreOpen(false);
+    setGuideOpen(false);
+    setPreferences((previous) => ({
+      ...previous,
+      recentModules: [next, ...previous.recentModules.filter((item) => item !== next)].slice(0, 5),
+    }));
     if (window.location.hash !== `#${next}`) {
       window.history.pushState(null, "", `#${next}`);
     }
@@ -155,8 +268,106 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    applyPreferences(preferences);
+    savePreferences(preferences);
+  }, [preferences]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setBooting(false), 320);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     document.title = t("App title");
   }, [t]);
+
+  useEffect(() => {
+    const onBeforeInstall = (event: Event) => {
+      event.preventDefault();
+      setInstallEvent(event as unknown as InstallEventLike);
+    };
+    window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    return () => window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+  }, []);
+
+  useEffect(() => {
+    const openFromUrl = (url: string) => {
+      try {
+        const parsed = new URL(url, window.location.origin);
+        const fromHash = parsed.hash.replace(/^#/, "");
+        const fromPath = parsed.pathname.split("/").filter(Boolean).pop() ?? "";
+        const id = decodeURIComponent(fromHash || fromPath);
+        if (ALL_NAV_ITEMS.some((item) => item.id === id)) setTab(id);
+      } catch {
+        // Ignore malformed deep-link URLs.
+      }
+    };
+    const onAppUrl = (event: Event) => {
+      const detail = (event as CustomEvent<{ url?: string } | string>).detail;
+      openFromUrl(typeof detail === "string" ? detail : detail?.url ?? "");
+    };
+    const onMessage = (event: MessageEvent) => {
+      if (event.source !== window || typeof event.data !== "object" || !event.data) return;
+      const url = (event.data as { url?: unknown }).url ?? (event.data as { d0knUrl?: unknown }).d0knUrl;
+      if (typeof url === "string") openFromUrl(url);
+    };
+    let disposed = false;
+    let appListener: { remove: () => void } | undefined;
+    void CapacitorApp.addListener("appUrlOpen", ({ url }) => openFromUrl(url)).then((handle) => {
+      if (disposed) void handle.remove();
+      else appListener = handle;
+    });
+    window.addEventListener("d0kn-app-url-open", onAppUrl);
+    window.addEventListener("message", onMessage);
+    return () => {
+      disposed = true;
+      if (appListener) void appListener.remove();
+      window.removeEventListener("d0kn-app-url-open", onAppUrl);
+      window.removeEventListener("message", onMessage);
+    };
+  }, [setTab]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShortcutsOpen(false);
+        setGuideOpen(false);
+        return;
+      }
+      const element = event.target as HTMLElement | null;
+      const typing = Boolean(
+        element &&
+          (element.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(element.tagName))
+      );
+      if (typing || event.ctrlKey || event.metaKey) return;
+      if (event.key === "?") {
+        event.preventDefault();
+        setShortcutsOpen(true);
+        return;
+      }
+      if (event.key === "/") {
+        event.preventDefault();
+        setTab("search");
+        window.setTimeout(() => document.querySelector<HTMLElement>(".main input")?.focus(), 0);
+        return;
+      }
+      if (event.altKey && /^[0-9]$/.test(event.key)) {
+        const index = event.key === "0" ? 9 : Number(event.key) - 1;
+        const target = SHORTCUT_MODULES[index];
+        if (target) {
+          event.preventDefault();
+          setTab(target);
+        }
+        return;
+      }
+      if (event.altKey) return;
+      const key = event.key.toLowerCase();
+      if (key === "v") setVoiceOpen((open) => !open);
+      else if (key === "t") setTheme((current) => (current === "dark" ? "light" : "dark"));
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [setTab]);
 
   useEffect(() => {
     const onHashChange = () => {
@@ -204,7 +415,20 @@ export default function App() {
   }, [moreOpen]);
 
   const activeItem = ALL_NAV_ITEMS.find((item) => item.id === tab) ?? ALL_NAV_ITEMS[0];
+  const activeGroup = NAV_GROUPS.find((group) => group.items.some((item) => item.id === tab))?.label ?? "Command center";
   const isPrimaryMobileTab = PRIMARY_MOBILE_TABS.includes(tab);
+  const activeGuide = MODULE_GUIDES[tab] ?? MODULE_GUIDES.dashboard;
+
+  const handleInstall = () => {
+    if (installEvent) {
+      void installEvent.prompt();
+      setInstallEvent(null);
+    } else {
+      window.alert(
+        t("On a phone or tablet, use your browser menu and choose Add to Home Screen or Install app. The app shell is cached so the workspace opens without a network connection; records stay in this browser.")
+      );
+    }
+  };
 
   const renderTab = () => {
     switch (tab) {
@@ -230,6 +454,11 @@ export default function App() {
             device={device}
             previewOverride={previewOverride}
             setPreviewOverride={setPreviewOverride}
+            preferences={preferences}
+            setPreferences={setPreferences}
+            theme={theme}
+            setTheme={setTheme}
+            onInstall={handleInstall}
           />
         );
       case "dashboard":
@@ -238,30 +467,72 @@ export default function App() {
     }
   };
 
+  const toggleNavGroup = (label: string) => {
+    setPreferences((previous) => ({
+      ...previous,
+      collapsedNav: previous.collapsedNav.includes(label)
+        ? previous.collapsedNav.filter((item) => item !== label)
+        : [...previous.collapsedNav, label],
+    }));
+  };
+
+  const togglePinned = (id: string) => {
+    setPreferences((previous) => ({
+      ...previous,
+      favoriteModules: previous.favoriteModules.includes(id)
+        ? previous.favoriteModules.filter((item) => item !== id)
+        : [...previous.favoriteModules, id],
+    }));
+  };
+
+  const resolveNavItems = (ids: string[]) =>
+    ids
+      .map((id) => ALL_NAV_ITEMS.find((item) => item.id === id))
+      .filter((item): item is NavItem => Boolean(item && item.id !== tab));
+
+  const sidebarGroups: NavGroup[] = [];
+  const recentItems = resolveNavItems(preferences.recentModules).slice(0, 3);
+  const pinnedItems = resolveNavItems(preferences.favoriteModules);
+  if (recentItems.length) sidebarGroups.push({ label: "Recent", items: recentItems });
+  if (pinnedItems.length) sidebarGroups.push({ label: "Pinned", items: pinnedItems });
+  sidebarGroups.push(...NAV_GROUPS);
+
+  const renderNavButton = (item: NavItem) => (
+    <button
+      key={item.id}
+      type="button"
+      className={`nav-item${tab === item.id ? " active" : ""}`}
+      onClick={() => setTab(item.id)}
+      title={t(item.label)}
+      aria-label={t(item.label)}
+      aria-current={tab === item.id ? "page" : undefined}
+    >
+      <NavIcon name={item.icon} />
+      <span className="nav-label">{t(item.label)}</span>
+      <span className="nav-short">{item.short}</span>
+    </button>
+  );
+
   const renderSidebarNav = () => (
     <nav className="sidebar-nav" aria-label={t("Primary navigation")}>
-      {NAV_GROUPS.map((group) => (
-        <div className="nav-group" key={group.label}>
-          <div className="nav-group-label">{t(group.label)}</div>
-          <div className="nav-list">
-            {group.items.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`nav-item${tab === item.id ? " active" : ""}`}
-                onClick={() => setTab(item.id)}
-                title={t(item.label)}
-                aria-label={t(item.label)}
-                aria-current={tab === item.id ? "page" : undefined}
-              >
-                <NavIcon name={item.icon} />
-                <span className="nav-label">{t(item.label)}</span>
-                <span className="nav-short">{item.short}</span>
-              </button>
-            ))}
+      {sidebarGroups.map((group) => {
+        const collapsed = preferences.collapsedNav.includes(group.label);
+        return (
+          <div className={`nav-group${collapsed ? " collapsed" : ""}`} key={group.label}>
+            <button
+              type="button"
+              className="nav-group-toggle"
+              onClick={() => toggleNavGroup(group.label)}
+              aria-expanded={!collapsed}
+              aria-label={`${t(group.label)} — ${collapsed ? t("Expand section") : t("Collapse section")}`}
+            >
+              <span>{t(group.label)}</span>
+              <span className="nav-group-chevron" aria-hidden="true">{collapsed ? "›" : "⌄"}</span>
+            </button>
+            {!collapsed && <div className="nav-list">{group.items.map(renderNavButton)}</div>}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </nav>
   );
 
@@ -317,6 +588,15 @@ export default function App() {
               <span>{t(device.layoutLabel)}</span>
             </div>
           </div>
+          <button
+            type="button"
+            className={`pin-current${preferences.favoriteModules.includes(tab) ? " active" : ""}`}
+            onClick={() => togglePinned(tab)}
+            aria-pressed={preferences.favoriteModules.includes(tab)}
+          >
+            <NavIcon name="pin" size={16} />
+            <span>{preferences.favoriteModules.includes(tab) ? t("Unpin this module") : t("Pin this module")}</span>
+          </button>
           <div className="sidebar-version">{t("Distribution OS v2.1 · local workspace")}</div>
         </div>
       </aside>
@@ -324,7 +604,13 @@ export default function App() {
       <div className="workspace">
         <header className="topbar">
           <div className="topbar-title">
-            <span className="topbar-eyebrow">{t("Distribution OS")} / {t(activeItem.label)}</span>
+            <nav className="breadcrumbs" aria-label={t("Breadcrumb")}>
+              <button type="button" onClick={() => setTab("dashboard")}>{t("Distribution OS")}</button>
+              <span aria-hidden="true">/</span>
+              <span>{t(activeGroup)}</span>
+              <span aria-hidden="true">/</span>
+              <span aria-current="page">{t(activeItem.label)}</span>
+            </nav>
             <h1>
               <span className="title-long">{t("D0K@N Global Distribution")}</span>
               <span className="title-short">{t("D0K@N Global")}</span>
@@ -359,6 +645,24 @@ export default function App() {
             </label>
 
             <button
+              className="icon-button guide-button"
+              type="button"
+              onClick={() => setGuideOpen(true)}
+              aria-label={t("About this module")}
+              title={t("About this module")}
+            >
+              <NavIcon name="info" size={18} />
+            </button>
+            <button
+              className="icon-button shortcuts-button"
+              type="button"
+              onClick={() => setShortcutsOpen(true)}
+              aria-label={t("Keyboard shortcuts")}
+              title={t("Keyboard shortcuts")}
+            >
+              <NavIcon name="keyboard" size={18} />
+            </button>
+            <button
               className="icon-button command-button"
               type="button"
               onClick={() => window.dispatchEvent(new Event("d0kn-voice-summary"))}
@@ -392,7 +696,7 @@ export default function App() {
           </div>
         </header>
 
-        <main className="main" id="main-content" tabIndex={-1}>{renderTab()}</main>
+        <main className="main" id="main-content" tabIndex={-1}>{booting ? <BootSkeleton /> : renderTab()}</main>
 
         <footer className="app-footer">{t("D0K@N Global Distribution · intelligent wholesale operations · v2.1")}</footer>
       </div>
@@ -456,6 +760,27 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <DataLists state={state} />
+
+      <InstallPrompt
+        visible={Boolean(installEvent) && !preferences.installDismissed}
+        onInstall={() => {
+          void installEvent?.prompt();
+          setInstallEvent(null);
+        }}
+        onDismiss={() => setPreferences((previous) => ({ ...previous, installDismissed: true }))}
+      />
+
+      <ShortcutDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <WhatsNewDialog open={whatsNewOpen} onClose={() => setWhatsNewOpen(false)} />
+      <ModuleGuideDialog
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        title={t(activeItem.label)}
+        description={t(activeGuide.description)}
+        points={activeGuide.points}
+      />
 
       <VoiceAssistant
         state={state}

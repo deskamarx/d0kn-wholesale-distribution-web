@@ -23,7 +23,10 @@ export type NavIconName =
   | "volume"
   | "sun"
   | "moon"
-  | "stop";
+  | "stop"
+  | "info"
+  | "pin"
+  | "keyboard";
 
 interface Props {
   name: NavIconName | string;
@@ -198,6 +201,28 @@ function paths(name: string): JSX.Element {
       return <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />;
     case "stop":
       return <rect x="6" y="6" width="12" height="12" rx="2" />;
+    case "info":
+      return (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 11v5" />
+          <circle cx="12" cy="7.5" r="0.8" fill="currentColor" stroke="none" />
+        </>
+      );
+    case "pin":
+      return (
+        <>
+          <path d="M9 3h6l-1 5 3 3H7l3-3z" />
+          <path d="M12 11v10" />
+        </>
+      );
+    case "keyboard":
+      return (
+        <>
+          <rect x="2" y="5" width="20" height="14" rx="3" />
+          <path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M10 13h.01M14 13h.01M18 13h.01M8 16h8" />
+        </>
+      );
     default:
       return <circle cx="12" cy="12" r="8" />;
   }

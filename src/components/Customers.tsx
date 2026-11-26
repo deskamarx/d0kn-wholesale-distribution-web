@@ -5,6 +5,9 @@ import { money, number, percent, titleCase } from "../lib/format";
 import { getCustomerExposure } from "../lib/intelligence";
 import { removeById, uid, upsert } from "../lib/store";
 import { useLanguage } from "../i18n";
+import { duplicateExists, readErrorsAloud, useDirtyForm } from "../lib/forms";
+import { EmptyState, RequiredProgress, ValidationSummary } from "./Common";
+import { useUndoDelete } from "./Feedback";
 import { Metric, ProgressBar, StatusChip } from "./Ui";
 
 interface Props {
@@ -34,10 +37,14 @@ function creditTone(utilization: number): "success" | "warning" | "danger" {
 }
 
 export default function Customers({ state, setState }: Props) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [form, setForm] = useState<Customer>(emptyCustomer);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [errors, setErrors] = useState<string[]>([]);
+  const [formKey, setFormKey] = useState(0);
+  const undoDelete = useUndoDelete();
+  const { confirmDiscard } = useDirtyForm(form, `${editingId ?? "new"}-${formKey}`);
 
   const totalCreditLimit = state.customers.reduce((sum, customer) => sum + customer.creditLimit, 0);
   const activeAccounts = state.customers.filter((customer) => customer.status === "active").length;
@@ -58,10 +65,21 @@ export default function Customers({ state, setState }: Props) {
   }, [state.customers, query]);
 
   const saveCustomer = () => {
-    if (!form.company.trim() || !form.contact.trim()) {
-      alert(t("Company and contact are required."));
+    const found: string[] = [];
+    if (!form.company.trim()) found.push(t("Company is required"));
+    if (!form.contact.trim()) found.push(t("Contact is required"));
+    if (duplicateExists(state.customers, "company", form.company, editingId ?? undefined)) {
+      found.push(t("An account with this company name already exists"));
+    }
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      found.push(t("Enter a valid email address"));
+    }
+    if (found.length) {
+      setErrors(found);
+      void readErrorsAloud(found, language);
       return;
     }
+    setErrors([]);
     const customer: Customer = {
       ...form,
       id: editingId ?? uid("CUS"),
@@ -77,23 +95,38 @@ export default function Customers({ state, setState }: Props) {
     };
     setState((prev) => ({ ...prev, customers: upsert(prev.customers, customer) }));
     setForm(emptyCustomer);
+    setErrors([]);
     setEditingId(null);
+    setFormKey((current) => current + 1);
   };
 
   const editCustomer = (customer: Customer) => {
     setForm({ ...customer });
+    setErrors([]);
     setEditingId(customer.id);
+    setFormKey((current) => current + 1);
   };
 
   const cancelEdit = () => {
+    if (!confirmDiscard(t("Discard unsaved changes?"))) return;
     setForm(emptyCustomer);
+    setErrors([]);
     setEditingId(null);
+    setFormKey((current) => current + 1);
   };
 
   const deleteCustomer = (customer: Customer) => {
     if (!window.confirm(`${t("Delete customer")} ${customer.company}?`)) return;
-    setState((prev) => ({ ...prev, customers: removeById(prev.customers, customer.id) }));
-    if (editingId === customer.id) cancelEdit();
+    undoDelete(
+      () => setState((prev) => ({ ...prev, customers: removeById(prev.customers, customer.id) })),
+      () => setState((prev) => ({ ...prev, customers: upsert(prev.customers, customer) }))
+    );
+    if (editingId === customer.id) {
+      setForm(emptyCustomer);
+      setErrors([]);
+      setEditingId(null);
+      setFormKey((current) => current + 1);
+    }
   };
 
   return (
@@ -117,10 +150,15 @@ export default function Customers({ state, setState }: Props) {
           <h3>{editingId ? t("Edit customer") : t("Add customer")}</h3>
           <span className="chip info">{`${number(state.customers.length)} ${t("accounts")}`}</span>
         </div>
+        <ValidationSummary errors={errors} />
+        <RequiredProgress
+          complete={(form.company.trim() ? 1 : 0) + (form.contact.trim() ? 1 : 0)}
+          total={2}
+        />
         <div className="field-row">
           <div className="field">
             <label>{t("Company")}</label>
-            <input aria-label={t("Company")} value={form.company} onChange={(event) => setForm({ ...form, company: event.target.value })} />
+            <input list="d0kn-customers" aria-label={t("Company")} value={form.company} onChange={(event) => setForm({ ...form, company: event.target.value })} />
           </div>
           <div className="field">
             <label>{t("Contact")}</label>
@@ -144,7 +182,7 @@ export default function Customers({ state, setState }: Props) {
           </div>
           <div className="field">
             <label>{t("City")}</label>
-            <input aria-label={t("City")} value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} />
+            <input list="d0kn-cities" aria-label={t("City")} value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} />
           </div>
         </div>
         <div className="field-row">
@@ -197,13 +235,25 @@ export default function Customers({ state, setState }: Props) {
           <input aria-label={t("Search customers...")} placeholder={t("Search customers...")} value={query} onChange={(event) => setQuery(event.target.value)} />
         </div>
         <div className="list">
-          {filtered.length === 0 && <div className="empty">{t("No customers found.")}</div>}
+          {filtered.length === 0 && (
+            <EmptyState
+              title={t("No customers found.")}
+              description={t("Try another search term or add the first account above.")}
+              actionLabel={query ? t("Clear search") : undefined}
+              onAction={query ? () => setQuery("") : undefined}
+            />
+          )}
           {filtered.map((customer) => {
             const exposure = getCustomerExposure(state, customer.id);
             const utilization = customer.creditLimit > 0 ? (exposure / customer.creditLimit) * 100 : exposure > 0 ? 100 : 0;
             const highRisk = utilization > 80;
             return (
-              <div className="row-card" key={customer.id} style={highRisk ? { borderColor: "var(--danger)" } : undefined}>
+              <div
+                className="row-card"
+                key={customer.id}
+                style={highRisk ? { borderColor: "var(--danger)" } : undefined}
+                data-preview={`${customer.company} · ${customer.city || t("City")} · ${t("Credit limit")} ${money(customer.creditLimit, state.company.defaultCurrency)}`}
+              >
                 <div className="row-top">
                   <div>
                     <h4>{customer.company}</h4>

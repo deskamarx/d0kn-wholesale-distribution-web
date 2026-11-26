@@ -5,6 +5,9 @@ import { compactMoney, money, number, percent, shortDate } from "../lib/format";
 import { getOrderMargin, getOrderTotal, lineAmount } from "../lib/intelligence";
 import { removeById, uid, updateById, upsert } from "../lib/store";
 import { useLanguage } from "../i18n";
+import { duplicateExists, readErrorsAloud, useDirtyForm } from "../lib/forms";
+import { EmptyState, RequiredProgress, ValidationSummary } from "./Common";
+import { useUndoDelete } from "./Feedback";
 import { Metric, StatusChip } from "./Ui";
 
 interface Props {
@@ -45,14 +48,27 @@ function applyStockChange(products: Product[], delta: Map<string, number>): Prod
   });
 }
 
+function orderStockDelta(order: Order, sign: number): Map<string, number> {
+  const delta = new Map<string, number>();
+  if (order.status !== "completed") return delta;
+  stockRequirements(order.items).forEach((quantity, productId) => {
+    delta.set(productId, (delta.get(productId) ?? 0) + sign * quantity);
+  });
+  return delta;
+}
+
 const noRequirements = new Map<string, number>();
 
 export default function Orders({ state, setState }: Props) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [form, setForm] = useState<Order>(() => makeEmptyOrder(state));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [errors, setErrors] = useState<string[]>([]);
+  const [formKey, setFormKey] = useState(0);
+  const undoDelete = useUndoDelete();
+  const { confirmDiscard } = useDirtyForm(form, `${editingId ?? "new"}-${formKey}`);
 
   const customerName = (id: string): string =>
     state.customers.find((customer) => customer.id === id)?.company ?? t("Unknown customer");
@@ -126,10 +142,23 @@ export default function Orders({ state, setState }: Props) {
   };
 
   const saveOrder = () => {
-    if (!form.number.trim() || !form.customerId) {
-      alert(t("Order number and customer are required."));
+    const found: string[] = [];
+    if (!form.number.trim()) found.push(t("Order number is required"));
+    if (!form.customerId) found.push(t("Customer is required"));
+    if (duplicateExists(state.orders, "number", form.number, editingId ?? undefined)) {
+      found.push(t("An order with this number already exists"));
+    }
+    if (form.items.length === 0) found.push(t("Add at least one order line"));
+    form.items.forEach((item, index) => {
+      if (!item.productId) found.push(t("Select a product for line {number}.", { number: index + 1 }));
+      if (item.quantity <= 0) found.push(t("Quantity must be greater than zero on line {number}.", { number: index + 1 }));
+    });
+    if (found.length) {
+      setErrors(found);
+      void readErrorsAloud(found, language);
       return;
     }
+    setErrors([]);
     const items = form.items.map((item) => ({
       ...item,
       quantity: Math.max(0, item.quantity),
@@ -167,23 +196,45 @@ export default function Orders({ state, setState }: Props) {
       orders: upsert(prev.orders, order),
     }));
     setForm(makeEmptyOrder(state));
+    setErrors([]);
     setEditingId(null);
+    setFormKey((current) => current + 1);
   };
 
   const editOrder = (order: Order) => {
     setForm({ ...order, items: order.items.map((item) => ({ ...item })) });
+    setErrors([]);
     setEditingId(order.id);
+    setFormKey((current) => current + 1);
   };
 
   const cancelEdit = () => {
+    if (!confirmDiscard(t("Discard unsaved changes?"))) return;
     setForm(makeEmptyOrder(state));
+    setErrors([]);
     setEditingId(null);
+    setFormKey((current) => current + 1);
   };
 
   const deleteOrder = (order: Order) => {
     if (!window.confirm(`${t("Delete order")} ${order.number}?`)) return;
-    setState((prev) => ({ ...prev, orders: removeById(prev.orders, order.id) }));
-    if (editingId === order.id) cancelEdit();
+    undoDelete(
+      () => setState((prev) => ({
+        ...prev,
+        products: applyStockChange(prev.products, orderStockDelta(order, -1)),
+        orders: removeById(prev.orders, order.id),
+      })),
+      () => setState((prev) => ({
+        ...prev,
+        products: applyStockChange(prev.products, orderStockDelta(order, 1)),
+        orders: upsert(prev.orders, order),
+      }))
+    );
+    if (editingId === order.id) {
+      setForm(makeEmptyOrder(state));
+      setErrors([]);
+      setEditingId(null);
+    }
   };
 
   const changeStatus = (order: Order, nextStatus: Status) => {
@@ -232,6 +283,16 @@ export default function Orders({ state, setState }: Props) {
         <div className="section-title">
           <h3>{editingId ? t("Edit order") : t("Add order")}</h3>
           <span className="chip info">{`${number(state.orders.length)} ${t("records")}`}</span>
+        </div>
+        <ValidationSummary errors={errors} />
+        <RequiredProgress
+          complete={(form.number.trim() ? 1 : 0) + (form.customerId ? 1 : 0) + (form.items.length ? 1 : 0)}
+          total={3}
+        />
+        <div className="inline-calculator" aria-live="polite">
+          <div><span>{t("Order total")}</span><strong>{money(linesTotal(form.items), state.company.defaultCurrency)}</strong></div>
+          <div><span>{t("Estimated margin")}</span><strong>{percent(getOrderMargin(form, state.products))}</strong></div>
+          <div><span>{t("Lines")}</span><strong>{number(form.items.length)}</strong></div>
         </div>
         <div className="field-row">
           <div className="field">
@@ -294,7 +355,14 @@ export default function Orders({ state, setState }: Props) {
           <button className="small" type="button" onClick={addLine}>{t("Add item")}</button>
         </div>
         <div className="order-lines">
-          {form.items.length === 0 && <div className="empty">{t("No line items yet.")}</div>}
+          {form.items.length === 0 && (
+            <EmptyState
+              title={t("No line items yet.")}
+              description={t("Add a product to calculate the order value and reserve stock on completion.")}
+              actionLabel={t("Add item")}
+              onAction={addLine}
+            />
+          )}
           {form.items.map((item, index) => (
             <div className="line-row" key={index}>
               <div className="field">
@@ -352,12 +420,23 @@ export default function Orders({ state, setState }: Props) {
           </select>
         </div>
         <div className="list">
-          {filtered.length === 0 && <div className="empty">{t("No orders found.")}</div>}
+          {filtered.length === 0 && (
+            <EmptyState
+              title={t("No orders found.")}
+              description={t("Try another status or search term, or create the first order above.")}
+              actionLabel={query || statusFilter !== "all" ? t("Clear filters") : undefined}
+              onAction={query || statusFilter !== "all" ? () => { setQuery(""); setStatusFilter("all"); } : undefined}
+            />
+          )}
           {filtered.map((order) => {
             const total = getOrderTotal(order, state.products);
             const margin = getOrderMargin(order, state.products);
             return (
-              <div className="row-card" key={order.id}>
+              <div
+                className="row-card"
+                key={order.id}
+                data-preview={`${order.number} · ${customerName(order.customerId)} · ${t("Status")}: ${t(order.status)}`}
+              >
                 <div className="row-top">
                   <div>
                     <h4>{order.number}</h4>

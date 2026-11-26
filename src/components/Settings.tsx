@@ -4,9 +4,51 @@ import { initialState } from "../seed";
 import type { AppState } from "../types";
 import type { DeviceDisplayInfo, PreviewMode } from "../hooks/useDeviceProfile";
 import { LANGUAGE_NAMES, useLanguage } from "../i18n";
+import { useToast } from "./Feedback";
+import {
+  ACCENT_OPTIONS,
+  APK_VERSION,
+  APP_VERSION,
+  DENSITY_OPTIONS,
+  FONT_SCALE_OPTIONS,
+  PHASE1_CHANGES,
+  type Preferences,
+} from "../lib/preferences";
 
 const STORAGE_KEY = "d0kn-distribution-v1";
 const PREVIEW_KEY = "d0kn-distribution-preview-v1";
+const CONFLICT_MESSAGE = "Discard unsaved changes and load this scenario?";
+
+const BACKUP_ARRAY_KEYS = [
+  "products",
+  "suppliers",
+  "imports",
+  "shipments",
+  "warehouses",
+  "movements",
+  "customers",
+  "quotations",
+  "orders",
+  "invoices",
+  "payments",
+  "compliance",
+  "activity",
+] as const;
+
+function isValidBackup(value: unknown): value is AppState {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const parsed = value as Record<string, unknown>;
+  const company = parsed.company;
+  if (!company || typeof company !== "object" || Array.isArray(company)) return false;
+  for (const key of Object.keys(initialState.company) as Array<keyof typeof initialState.company>) {
+    const field = (company as Record<string, unknown>)[key];
+    if (field !== undefined && typeof field !== "string") return false;
+  }
+  for (const key of BACKUP_ARRAY_KEYS) {
+    if (parsed[key] !== undefined && !Array.isArray(parsed[key])) return false;
+  }
+  return true;
+}
 
 interface Props {
   state: AppState;
@@ -14,6 +56,11 @@ interface Props {
   device: DeviceDisplayInfo;
   previewOverride: PreviewMode;
   setPreviewOverride: (mode: PreviewMode) => void;
+  preferences: Preferences;
+  setPreferences: Dispatch<SetStateAction<Preferences>>;
+  theme: "light" | "dark";
+  setTheme: (theme: "light" | "dark") => void;
+  onInstall: () => void;
 }
 
 const PREVIEW_OPTIONS: Array<{ value: PreviewMode; label: string }> = [
@@ -23,9 +70,195 @@ const PREVIEW_OPTIONS: Array<{ value: PreviewMode; label: string }> = [
   { value: "desktop", label: "Desktop" },
 ];
 
-export default function Settings({ state, setState, device, previewOverride, setPreviewOverride }: Props) {
+const EXPORT_SECTIONS: Array<{ id: keyof AppState; label: string }> = [
+  { id: "company", label: "Company" },
+  { id: "products", label: "Products" },
+  { id: "suppliers", label: "Suppliers" },
+  { id: "imports", label: "Imports" },
+  { id: "shipments", label: "Shipments" },
+  { id: "warehouses", label: "Warehouse" },
+  { id: "customers", label: "Customers" },
+  { id: "quotations", label: "Quotations" },
+  { id: "orders", label: "Orders" },
+  { id: "invoices", label: "Invoices" },
+  { id: "payments", label: "Payments" },
+  { id: "compliance", label: "Compliance" },
+  { id: "activity", label: "Activity" },
+];
+
+type Scenario = "small" | "standard" | "stress";
+
+function buildScenario(kind: Scenario): AppState {
+  if (kind === "standard") return { ...initialState };
+  if (kind === "small") {
+    return {
+      ...initialState,
+      products: initialState.products.slice(0, 4),
+      suppliers: initialState.suppliers.slice(0, 3),
+      imports: initialState.imports.slice(0, 2),
+      shipments: initialState.shipments.slice(0, 2),
+      warehouses: initialState.warehouses.slice(0, 1),
+      movements: initialState.movements.slice(0, 6),
+      customers: initialState.customers.slice(0, 4),
+      quotations: initialState.quotations.slice(0, 3),
+      orders: initialState.orders.slice(0, 3),
+      invoices: initialState.invoices.slice(0, 3),
+      payments: initialState.payments.slice(0, 3),
+      compliance: initialState.compliance.slice(0, 3),
+      activity: initialState.activity.slice(0, 5),
+    };
+  }
+  const repeatMapped = <T extends { id: string }>(
+    items: T[],
+    count: number,
+    prefix: string,
+    idMap: Map<string, string>,
+    transform: (item: T, index: number, id: string) => T
+  ): T[] => {
+    if (items.length === 0) return [];
+    return Array.from({ length: count }, (_, index) => {
+      const source = items[index % items.length];
+      const id = `${prefix}-STRESS-${index + 1}`;
+      idMap.set(source.id, id);
+      return transform(source, index, id);
+    });
+  };
+
+  const supplierIds = new Map<string, string>();
+  const productIds = new Map<string, string>();
+  const importIds = new Map<string, string>();
+  const customerIds = new Map<string, string>();
+  const orderIds = new Map<string, string>();
+  const invoiceIds = new Map<string, string>();
+  const unmapped = () => new Map<string, string>();
+
+  const suppliers = repeatMapped(initialState.suppliers, 24, "SUP", supplierIds, (source, index, id) => ({
+    ...source,
+    id,
+    name: `${source.name} ${index + 1}`,
+  }));
+  const products = repeatMapped(initialState.products, 120, "PRD", productIds, (source, index, id) => ({
+    ...source,
+    id,
+    sku: `${source.sku}-S${index + 1}`,
+    supplierId: supplierIds.get(source.supplierId) ?? source.supplierId,
+  }));
+  const imports = repeatMapped(initialState.imports, 30, "IMP", importIds, (source, index, id) => ({
+    ...source,
+    id,
+    reference: `${source.reference}-S${index + 1}`,
+    supplierId: supplierIds.get(source.supplierId) ?? source.supplierId,
+    items: source.items.map((item) => ({
+      ...item,
+      productId: productIds.get(item.productId) ?? item.productId,
+    })),
+  }));
+  const shipments = repeatMapped(initialState.shipments, 40, "SHP", unmapped(), (source, index, id) => ({
+    ...source,
+    id,
+    reference: `${source.reference}-S${index + 1}`,
+    importId: importIds.get(source.importId) ?? source.importId,
+    trackingNumber: `${source.trackingNumber}-S${index + 1}`,
+  }));
+  const movements = repeatMapped(initialState.movements, 180, "MOV", unmapped(), (source, index, id) => ({
+    ...source,
+    id,
+    reference: `${source.reference}-S${index + 1}`,
+    productId: productIds.get(source.productId) ?? source.productId,
+  }));
+  const customers = repeatMapped(initialState.customers, 80, "CUS", customerIds, (source, index, id) => ({
+    ...source,
+    id,
+    company: `${source.company} ${index + 1}`,
+    email: source.email ? `${id.toLowerCase()}@example.test` : source.email,
+  }));
+  const quotations = repeatMapped(initialState.quotations, 60, "QUO", unmapped(), (source, index, id) => ({
+    ...source,
+    id,
+    number: `${source.number}-S${index + 1}`,
+    customerId: customerIds.get(source.customerId) ?? source.customerId,
+    items: source.items.map((item) => ({
+      ...item,
+      productId: productIds.get(item.productId) ?? item.productId,
+    })),
+  }));
+  const orders = repeatMapped(initialState.orders, 140, "ORD", orderIds, (source, index, id) => ({
+    ...source,
+    id,
+    number: `${source.number}-S${index + 1}`,
+    customerId: customerIds.get(source.customerId) ?? source.customerId,
+    items: source.items.map((item) => ({
+      ...item,
+      productId: productIds.get(item.productId) ?? item.productId,
+    })),
+  }));
+  const invoices = repeatMapped(initialState.invoices, 120, "INV", invoiceIds, (source, index, id) => ({
+    ...source,
+    id,
+    number: `${source.number}-S${index + 1}`,
+    customerId: customerIds.get(source.customerId) ?? source.customerId,
+    orderId: orderIds.get(source.orderId) ?? source.orderId,
+  }));
+  const payments = repeatMapped(initialState.payments, 90, "PAY", unmapped(), (source, index, id) => ({
+    ...source,
+    id,
+    invoiceId: invoiceIds.get(source.invoiceId) ?? source.invoiceId,
+    reference: `${source.reference || "PAY"}-S${index + 1}`,
+  }));
+  const compliance = repeatMapped(initialState.compliance, 40, "COM", unmapped(), (source, index, id) => ({
+    ...source,
+    id,
+    reference: `${source.reference}-S${index + 1}`,
+    entityId:
+      productIds.get(source.entityId) ??
+      supplierIds.get(source.entityId) ??
+      customerIds.get(source.entityId) ??
+      orderIds.get(source.entityId) ??
+      invoiceIds.get(source.entityId) ??
+      importIds.get(source.entityId) ??
+      source.entityId,
+  }));
+  const activity = repeatMapped(initialState.activity, 120, "ACT", unmapped(), (source, index, id) => ({
+    ...source,
+    id,
+    timestamp: new Date(Date.now() - index * 3_600_000).toISOString(),
+  }));
+
+  return {
+    ...initialState,
+    suppliers,
+    products,
+    imports,
+    shipments,
+    warehouses: initialState.warehouses,
+    movements,
+    customers,
+    quotations,
+    orders,
+    invoices,
+    payments,
+    compliance,
+    activity,
+  };
+}
+
+export default function Settings({
+  state,
+  setState,
+  device,
+  previewOverride,
+  setPreviewOverride,
+  preferences,
+  setPreferences,
+  theme,
+  setTheme,
+  onInstall,
+}: Props) {
   const { t, language, setLanguage } = useLanguage();
+  const { notify } = useToast();
   const [importText, setImportText] = useState("");
+  const [exportSection, setExportSection] = useState<keyof AppState>("company");
+  const [scenario, setScenario] = useState<Scenario>("standard");
   const languageCodes = Object.keys(LANGUAGE_NAMES) as Array<keyof typeof LANGUAGE_NAMES>;
 
   const exportData = () => {
@@ -35,25 +268,38 @@ export default function Settings({ state, setState, device, previewOverride, set
     link.href = url;
     link.download = "d0kn-distribution-backup.json";
     link.click();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
+  const exportModule = () => {
+    const payload = {
+      version: APP_VERSION,
+      exportedAt: new Date().toISOString(),
+      section: exportSection,
+      data: state[exportSection],
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `d0kn-${exportSection}-export.json`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
   const importData = () => {
     try {
-      const parsed = JSON.parse(importText) as AppState;
-      if (
-        !parsed ||
-        !parsed.company ||
-        !Array.isArray(parsed.products) ||
-        !Array.isArray(parsed.orders) ||
-        !Array.isArray(parsed.suppliers)
-      ) {
-        throw new Error(t("Invalid backup"));
-      }
-      setState({ ...initialState, ...parsed });
+      const parsed: unknown = JSON.parse(importText);
+      if (!isValidBackup(parsed)) throw new Error(t("Invalid backup"));
+      setState({
+        ...initialState,
+        ...parsed,
+        company: { ...initialState.company, ...parsed.company },
+      });
       setImportText("");
+      notify(t("Restore complete"), { tone: "success" });
     } catch {
-      alert(t("Invalid backup file. Please paste valid app backup JSON."));
+      notify(t("Invalid backup file. Please paste valid app backup JSON."), { tone: "danger" });
     }
   };
 
@@ -63,12 +309,96 @@ export default function Settings({ state, setState, device, previewOverride, set
     }
   };
 
+  const loadScenario = () => {
+    if (!window.confirm(t(CONFLICT_MESSAGE))) return;
+    setState(buildScenario(scenario));
+    notify(t("Scenario loaded"), { tone: "success" });
+  };
+
   return (
     <>
       <div className="page-header">
         <div>
           <h2>{t("Settings")}</h2>
           <p>{t("Local workspace data, adaptive display, backup, restore, and reset controls.")}</p>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="section-title">
+          <h3>{t("Appearance")}</h3>
+          <span className="chip info">{t(theme === "dark" ? "Dark theme" : "Light theme")}</span>
+        </div>
+        <p className="muted-text">
+          {t("Display preferences are saved in this browser and apply to every module.")}
+        </p>
+
+        <div className="preference-block">
+          <span className="preference-label">{t("Theme")}</span>
+          <div className="segmented" role="group" aria-label={t("Theme")}>
+            {(["light", "dark"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={theme === option ? "active" : undefined}
+                aria-pressed={theme === option}
+                onClick={() => setTheme(option)}
+              >
+                {t(option === "light" ? "Light theme" : "Dark theme")}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="preference-block">
+          <span className="preference-label">{t("Density")}</span>
+          <div className="segmented" role="group" aria-label={t("Density")}>
+            {DENSITY_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={preferences.density === option ? "active" : undefined}
+                aria-pressed={preferences.density === option}
+                onClick={() => setPreferences((previous) => ({ ...previous, density: option }))}
+              >
+                {t(option === "compact" ? "Compact" : "Relaxed")}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="preference-block">
+          <span className="preference-label">{t("Text size")}</span>
+          <div className="segmented" role="group" aria-label={t("Text size")}>
+            {FONT_SCALE_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={preferences.fontScale === option ? "active" : undefined}
+                aria-pressed={preferences.fontScale === option}
+                onClick={() => setPreferences((previous) => ({ ...previous, fontScale: option }))}
+              >
+                {t(option === "small" ? "Small" : option === "large" ? "Large" : "Normal")}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="preference-block">
+          <span className="preference-label">{t("Accent colour")}</span>
+          <div className="accent-options" role="group" aria-label={t("Accent colour")}>
+            {ACCENT_OPTIONS.map((accent) => (
+              <button
+                key={accent}
+                type="button"
+                className={`accent-swatch accent-${accent}${preferences.accent === accent ? " active" : ""}`}
+                aria-pressed={preferences.accent === accent}
+                aria-label={t(accent === "indigo" ? "Indigo" : accent === "violet" ? "Violet" : accent === "teal" ? "Teal" : accent === "amber" ? "Amber" : "Rose")}
+                title={t(accent === "indigo" ? "Indigo" : accent === "violet" ? "Violet" : accent === "teal" ? "Teal" : accent === "amber" ? "Amber" : "Rose")}
+                onClick={() => setPreferences((previous) => ({ ...previous, accent }))}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -151,6 +481,9 @@ export default function Settings({ state, setState, device, previewOverride, set
         <p className="muted-text">
           {t("On a phone or tablet, use your browser menu and choose Add to Home Screen or Install app. The app shell is cached so the workspace opens without a network connection; records stay in this browser.")}
         </p>
+        <div className="actions">
+          <button className="primary" type="button" onClick={onInstall}>{t("Install app")}</button>
+        </div>
       </div>
 
       <div className="card">
@@ -167,11 +500,35 @@ export default function Settings({ state, setState, device, previewOverride, set
 
       <div className="card">
         <div className="section-title">
+          <h3>{t("Module export")}</h3>
+        </div>
+        <p className="muted-text">{t("Export only the data shown in this module as a JSON file.")}</p>
+        <div className="field">
+          <label htmlFor="module-export-select">{t("Select module")}</label>
+          <select
+            id="module-export-select"
+            value={exportSection}
+            onChange={(event) => setExportSection(event.target.value as keyof AppState)}
+          >
+            {EXPORT_SECTIONS.map((section) => (
+              <option key={section.id} value={section.id}>{t(section.label)}</option>
+            ))}
+          </select>
+        </div>
+        <div className="actions">
+          <button type="button" onClick={exportModule}>{t("Export module data")}</button>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="section-title">
           <h3>{t("Restore")}</h3>
         </div>
         <div className="field">
-          <label>{t("Backup JSON")}</label>
-          <textarea aria-label={t("Backup JSON")}
+          <label htmlFor="backup-json">{t("Backup JSON")}</label>
+          <textarea
+            id="backup-json"
+            aria-label={t("Backup JSON")}
             className="backup-textarea"
             value={importText}
             onChange={(event) => setImportText(event.target.value)}
@@ -180,6 +537,31 @@ export default function Settings({ state, setState, device, previewOverride, set
         </div>
         <div className="actions">
           <button className="primary" type="button" onClick={importData}>{t("Restore backup")}</button>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="section-title">
+          <h3>{t("Test scenarios")}</h3>
+          <span className="chip neutral">{t("Local only")}</span>
+        </div>
+        <p className="muted-text">
+          {t("Load a sample dataset for testing. This replaces the current workspace.")}
+        </p>
+        <div className="field">
+          <label htmlFor="scenario-select">{t("Scenario")}</label>
+          <select
+            id="scenario-select"
+            value={scenario}
+            onChange={(event) => setScenario(event.target.value as Scenario)}
+          >
+            <option value="small">{t("Small dataset")}</option>
+            <option value="standard">{t("Standard dataset")}</option>
+            <option value="stress">{t("Stress dataset")}</option>
+          </select>
+        </div>
+        <div className="actions">
+          <button type="button" onClick={loadScenario}>{t("Load scenario")}</button>
         </div>
       </div>
 
@@ -197,8 +579,10 @@ export default function Settings({ state, setState, device, previewOverride, set
           <h3>{t("Workspace")}</h3>
         </div>
         <div className="meta-list">
-          <span>{t("Version")}</span>
-          <strong>2.1.0</strong>
+          <span>{t("Web version")}</span>
+          <strong>{APP_VERSION}</strong>
+          <span>{t("Android package version")}</span>
+          <strong>{APK_VERSION}</strong>
           <span>{t("Storage key")}</span>
           <strong>{STORAGE_KEY}</strong>
           <span>{t("Preview key")}</span>
@@ -216,6 +600,16 @@ export default function Settings({ state, setState, device, previewOverride, set
           <span>{t("Fiscal year start")}</span>
           <strong>{state.company.fiscalYearStart}</strong>
         </div>
+      </div>
+
+      <div className="card">
+        <div className="section-title">
+          <h3>{t("Changelog")}</h3>
+          <span className="chip neutral">{APP_VERSION}</span>
+        </div>
+        <ul className="changelog-list">
+          {PHASE1_CHANGES.map((change) => <li key={change}>{t(change)}</li>)}
+        </ul>
       </div>
     </>
   );

@@ -1,10 +1,13 @@
 import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { AppState, Shipment, ShipmentMode, Status } from "../types";
-import { number, shortDate, titleCase } from "../lib/format";
+import { daysUntil, number, shortDate, titleCase } from "../lib/format";
 import { getHighRiskShipments } from "../lib/intelligence";
 import { removeById, uid, updateById, upsert } from "../lib/store";
 import { useLanguage } from "../i18n";
+import { duplicateExists, readErrorsAloud, useDirtyForm } from "../lib/forms";
+import { EmptyState, RequiredProgress, ValidationSummary } from "./Common";
+import { useToast, useUndoDelete } from "./Feedback";
 import { Metric, StatusChip } from "./Ui";
 
 interface Props {
@@ -43,11 +46,16 @@ function blankShipment(importId: string): ShipmentForm {
 }
 
 export default function Shipments({ state, setState }: Props) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { notify } = useToast();
+  const undoDelete = useUndoDelete();
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ShipmentForm>(() => blankShipment(state.imports[0]?.id ?? ""));
+  const [errors, setErrors] = useState<string[]>([]);
+  const [formKey, setFormKey] = useState(0);
+  const { confirmDiscard } = useDirtyForm(form, showForm ? `${editingId ?? "new"}-${formKey}` : "closed");
 
   const activeShipments = state.shipments.filter(
     (shipment) => !["completed", "cancelled"].includes(shipment.status)
@@ -79,24 +87,51 @@ export default function Shipments({ state, setState }: Props) {
   const patch = (changes: Partial<ShipmentForm>) => setForm((prev) => ({ ...prev, ...changes }));
 
   const openAdd = () => {
-    setForm(blankShipment(state.imports[0]?.id ?? ""));
+    const recent = state.shipments[0];
+    setForm({
+      ...blankShipment(state.imports[0]?.id ?? ""),
+      carrier: recent?.carrier ?? "",
+      mode: recent?.mode ?? "sea",
+      originPort: recent?.originPort ?? "",
+      destinationPort: recent?.destinationPort ?? "",
+    });
+    setErrors([]);
     setEditingId(null);
+    setFormKey((current) => current + 1);
     setShowForm(true);
   };
 
   const startEdit = (shipment: Shipment) => {
     setForm({ ...shipment });
+    setErrors([]);
     setEditingId(shipment.id);
+    setFormKey((current) => current + 1);
     setShowForm(true);
   };
 
-  const closeForm = () => {
+  const closeForm = (force = false) => {
+    if (force !== true && !confirmDiscard(t("Discard unsaved changes?"))) return;
+    setErrors([]);
     setEditingId(null);
     setShowForm(false);
   };
 
   const saveShipment = () => {
-    if (!form.reference.trim()) return;
+    const found: string[] = [];
+    if (!form.reference.trim()) found.push(t("Reference is required"));
+    if (duplicateExists(state.shipments, "reference", form.reference, editingId ?? undefined)) {
+      found.push(t("A shipment with this reference already exists"));
+    }
+    if (!form.importId) found.push(t("Link this shipment to an import batch"));
+    if (form.eta && form.departureDate && form.eta < form.departureDate) {
+      found.push(t("ETA cannot be earlier than the departure date"));
+    }
+    if (found.length) {
+      setErrors(found);
+      void readErrorsAloud(found, language);
+      return;
+    }
+    setErrors([]);
     const shipment: Shipment = {
       ...form,
       id: editingId ?? uid("SHP"),
@@ -109,22 +144,34 @@ export default function Shipments({ state, setState }: Props) {
       notes: form.notes.trim(),
     };
     setState((prev) => ({ ...prev, shipments: upsert(prev.shipments, shipment) }));
-    closeForm();
+    closeForm(true);
   };
 
   const removeShipment = (id: string) => {
-    if (!window.confirm(t("Delete this shipment? This cannot be undone."))) return;
-    setState((prev) => ({ ...prev, shipments: removeById(prev.shipments, id) }));
-    if (editingId === id) closeForm();
+    const shipment = state.shipments.find((item) => item.id === id);
+    if (!shipment || !window.confirm(t("Delete this shipment? This cannot be undone."))) return;
+    undoDelete(
+      () => setState((prev) => ({ ...prev, shipments: removeById(prev.shipments, id) })),
+      () => setState((prev) => ({ ...prev, shipments: upsert(prev.shipments, shipment) }))
+    );
+    if (editingId === id) {
+      setEditingId(null);
+      setShowForm(false);
+    }
+  };
+
+  const setRisk = (shipment: Shipment, delayRisk: Shipment["delayRisk"]) => {
+    if (shipment.delayRisk === delayRisk) return;
+    setState((prev) => ({
+      ...prev,
+      shipments: updateById(prev.shipments, shipment.id, { delayRisk }),
+    }));
+    notify(`${shipment.reference}: ${t("Delay risk")} → ${t(delayRisk)}`, { tone: delayRisk === "high" ? "danger" : "info" });
   };
 
   const cycleRisk = (shipment: Shipment) => {
     const index = RISK_LEVELS.indexOf(shipment.delayRisk);
-    const next = RISK_LEVELS[(index + 1) % RISK_LEVELS.length];
-    setState((prev) => ({
-      ...prev,
-      shipments: updateById(prev.shipments, shipment.id, { delayRisk: next }),
-    }));
+    setRisk(shipment, RISK_LEVELS[(index + 1) % RISK_LEVELS.length]);
   };
 
   const cycleDocuments = (shipment: Shipment) => {
@@ -150,9 +197,19 @@ export default function Shipments({ state, setState }: Props) {
         <section className="card">
           <div className="section-title">
             <h3>{editingId ? t("Edit shipment") : t("Add shipment")}</h3>
-            <button className="small" type="button" onClick={closeForm}>{t("Cancel")}</button>
+            <button className="small" type="button" onClick={() => closeForm()}>{t("Cancel")}</button>
           </div>
           <p className="muted-text">{t("Link the booking to an import so the shipment watchlist stays in sync.")}</p>
+          <ValidationSummary errors={errors} />
+          <RequiredProgress
+            complete={(form.reference.trim() ? 1 : 0) + (form.importId ? 1 : 0)}
+            total={2}
+          />
+          <div className="inline-calculator" aria-live="polite">
+            <div><span>{t("ETA")}</span><strong>{form.eta ? shortDate(form.eta) : "—"}</strong></div>
+            <div><span>{t("Days to ETA")}</span><strong>{form.eta ? number(daysUntil(form.eta) ?? 0) : "—"}</strong></div>
+            <div><span>{t("Delay risk")}</span><strong>{t(form.delayRisk)}</strong></div>
+          </div>
 
           <div className="field-row">
             <div className="field"><label>{t("Reference")}</label><input aria-label={t("Reference")} value={form.reference} onChange={(event) => patch({ reference: event.target.value })} placeholder={t("SHP-014")} /></div>
@@ -167,7 +224,7 @@ export default function Shipments({ state, setState }: Props) {
             </div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Carrier")}</label><input aria-label={t("Carrier")} value={form.carrier} onChange={(event) => patch({ carrier: event.target.value })} /></div>
+            <div className="field"><label>{t("Carrier")}</label><input list="d0kn-carriers" aria-label={t("Carrier")} value={form.carrier} onChange={(event) => patch({ carrier: event.target.value })} /></div>
             <div className="field">
               <label>{t("Mode")}</label>
               <select aria-label={t("Mode")} value={form.mode} onChange={(event) => patch({ mode: event.target.value as ShipmentMode })}>
@@ -176,8 +233,8 @@ export default function Shipments({ state, setState }: Props) {
             </div>
           </div>
           <div className="field-row">
-            <div className="field"><label>{t("Origin port")}</label><input aria-label={t("Origin port")} value={form.originPort} onChange={(event) => patch({ originPort: event.target.value })} /></div>
-            <div className="field"><label>{t("Destination port")}</label><input aria-label={t("Destination port")} value={form.destinationPort} onChange={(event) => patch({ destinationPort: event.target.value })} /></div>
+            <div className="field"><label>{t("Origin port")}</label><input list="d0kn-origin-ports" aria-label={t("Origin port")} value={form.originPort} onChange={(event) => patch({ originPort: event.target.value })} /></div>
+            <div className="field"><label>{t("Destination port")}</label><input list="d0kn-destination-ports" aria-label={t("Destination port")} value={form.destinationPort} onChange={(event) => patch({ destinationPort: event.target.value })} /></div>
           </div>
           <div className="field-row">
             <div className="field"><label>{t("Departure date")}</label><input aria-label={t("Departure date")} type="date" value={form.departureDate} onChange={(event) => patch({ departureDate: event.target.value })} /></div>
@@ -214,7 +271,7 @@ export default function Shipments({ state, setState }: Props) {
             <button className="primary" type="button" disabled={!form.reference.trim()} onClick={saveShipment}>
               {editingId ? t("Save changes") : t("Save shipment")}
             </button>
-            <button type="button" onClick={closeForm}>{t("Cancel")}</button>
+            <button type="button" onClick={() => closeForm()}>{t("Cancel")}</button>
           </div>
         </section>
       )}
@@ -249,11 +306,22 @@ export default function Shipments({ state, setState }: Props) {
           />
         </div>
         <div className="list">
-          {filtered.length === 0 && <div className="empty">{t("No shipments match the current search.")}</div>}
+          {filtered.length === 0 && (
+            <EmptyState
+              title={t("No shipments match the current search.")}
+              description={t("Try another reference, carrier or route, or add a shipment above.")}
+              actionLabel={query ? t("Clear search") : undefined}
+              onAction={query ? () => setQuery("") : undefined}
+            />
+          )}
           {filtered.map((shipment) => {
             const risky = shipment.delayRisk === "high" && !["completed", "cancelled"].includes(shipment.status);
             return (
-              <div className={`row-card${risky ? " tone-danger" : ""}`} key={shipment.id}>
+              <div
+                className={`row-card${risky ? " tone-danger" : ""}`}
+                key={shipment.id}
+                data-preview={`${shipment.reference} · ${shipment.carrier || t("Carrier")} · ${t("ETA")} ${shortDate(shipment.eta)}`}
+              >
                 <div className="row-top">
                   <div>
                     <h4>
@@ -285,6 +353,16 @@ export default function Shipments({ state, setState }: Props) {
                 {shipment.notes && <p className="muted-text mt-1 mb-0">{shipment.notes}</p>}
 
                 <div className="actions mt-2">
+                  <label className="inline-control">
+                    <span>{t("Override risk")}</span>
+                    <select
+                      aria-label={`${t("Override risk")}: ${shipment.reference}`}
+                      value={shipment.delayRisk}
+                      onChange={(event) => setRisk(shipment, event.target.value as Shipment["delayRisk"])}
+                    >
+                      {RISK_LEVELS.map((risk) => <option key={risk} value={risk}>{t(risk)}</option>)}
+                    </select>
+                  </label>
                   <button
                     className="small"
                     type="button"

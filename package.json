@@ -1,7 +1,7 @@
 {
   "name": "d0kn-wholesale-distribution-web",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.6.3",
+    "@capacitor/app": "^8.1.2",
     "@capacitor/cli": "^8.6.3",
     "@capacitor/core": "^8.6.3",
     "@capgo/capacitor-speech-recognition": "^8.6.0",

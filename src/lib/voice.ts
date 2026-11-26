@@ -143,15 +143,15 @@ const NAV_KEYS: Record<string, string> = {
 };
 
 const NAV_EXTRA: Record<string, string[]> = {
-  dashboard: ["home", "homepage", "main", "start", "হোম", "প্রধান", "主页", "首页"],
-  intelligence: ["ai", "insights", "signals", "briefing", "ইনসাইট", "সংকেত", "洞察", "信号"],
-  analytics: ["reports", "reporting", "metrics", "রিপোর্ট", "বিশ্লেষণা", "报表", "报告"],
-  warehouse: ["stock", "inventory", "godown", "স্টক", "গোডাউন", "库存", "仓库"],
-  search: ["find", "lookup", "query", "খোঁজা", "অনুসন্ধান", "查找", "搜索"],
-  orders: ["sales order", "sales orders", "অর্ডার", "订单"],
-  invoices: ["billing", "bill", "চালান", "বিল", "发票"],
-  payments: ["receipts", "collections", "প্রাপ্তি", "আদায়", "收款"],
-  compliance: ["certificates", "licences", "licenses", "সম্মতি", "合规"],
+  dashboard: ["home", "homepage", "main", "start", "হোম", "প্রধান", "মূল পাতা", "主页", "首页"],
+  intelligence: ["ai", "insights", "signals", "briefing", "ইনসাইট", "সংকেত", "বুদ্ধিমত্তা", "洞察", "信号", "智能"],
+  analytics: ["reports", "reporting", "metrics", "রিপোর্ট", "বিশ্লেষণা", "বিশ্লেষণ", "报表", "报告", "分析"],
+  warehouse: ["stock", "inventory", "godown", "স্টক", "গোডাউন", "গুদাম", "库存", "仓库"],
+  search: ["find", "lookup", "query", "খোঁজা", "অনুসন্ধান", "খোঁজুন", "查找", "搜索"],
+  orders: ["sales order", "sales orders", "অর্ডার", "অর্ডারস", "订单", "销售订单"],
+  invoices: ["billing", "bill", "চালান", "বিল", "发票", "账单"],
+  payments: ["receipts", "collections", "প্রাপ্তি", "আদায়", "পেমেন্ট", "收款", "付款"],
+  compliance: ["certificates", "licences", "licenses", "সম্মতি", "合规", "证书"],
 };
 
 export function navLabelKeys(): string[] {
@@ -187,32 +187,32 @@ export function matchModule(transcript: string): string | null {
 
 const SUMMARIZE_WORDS: Record<Language, string[]> = {
   en: ["summarize", "summarise", "summary", "report", "briefing", "brief", "tell me the report", "read the report"],
-  bn: ["সারাংশ", "সংক্ষেপ", "রিপোর্ট", "ব্রিফিং", "বলুন", "শোনান", "পড়ে"] ,
-  zh: ["总结", "摘要", "报告", "简报", "朗读", "说说", "讲一下"],
+  bn: ["সারাংশ", "সংক্ষেপ", "রিপোর্ট", "ব্রিফিং", "বলুন", "শোনান", "পড়ে", "শোনাও", "বলো"],
+  zh: ["总结", "摘要", "报告", "简报", "朗读", "说说", "讲一下", "念一下"],
 };
 
 const NAV_VERBS: Record<Language, string[]> = {
   en: ["open", "go to", "goto", "navigate to", "show", "launch", "take me to"],
-  bn: ["খুলুন", "খোল", "যান", "দেখান", "চালু", "নিয়ে যান"],
-  zh: ["打开", "前往", "进入", "显示", "转到", "切换到"],
+  bn: ["খুলুন", "খোল", "যান", "দেখান", "চালু", "নিয়ে যান", "ওপেন", "দেখাই", "চলে যান"],
+  zh: ["打开", "前往", "进入", "显示", "转到", "切换到", "开启", "切到"],
 };
 
 const SEARCH_WORDS: Record<Language, string[]> = {
   en: ["search", "find", "look for", "lookup"],
-  bn: ["খুঁজুন", "খোঁজা", "অনুসন্ধান", "অনুসন্ধান করুন"],
-  zh: ["搜索", "查找", "找一下", "查询"],
+  bn: ["খুঁজুন", "খোঁজা", "অনুসন্ধান", "অনুসন্ধান করুন", "খুঁজে দিন"],
+  zh: ["搜索", "查找", "找一下", "查询", "搜一下"],
 };
 
 const STOP_WORDS: Record<Language, string[]> = {
   en: ["stop", "cancel", "dismiss", "close voice"],
-  bn: ["বন্ধ", "বাতিল", "বন্ধ করুন"],
-  zh: ["停止", "取消", "关闭语音"],
+  bn: ["বন্ধ", "বাতিল", "বন্ধ করুন", "থামুন"],
+  zh: ["停止", "取消", "关闭语音", "别读了"],
 };
 
 const HELP_WORDS: Record<Language, string[]> = {
   en: ["help", "examples", "what can i say", "commands"],
-  bn: ["সাহায্য", "উদাহরণ", "কমান্ড"],
-  zh: ["帮助", "示例", "指令"],
+  bn: ["সাহায্য", "উদাহরণ", "কমান্ড", "কী বলতে পারি"],
+  zh: ["帮助", "示例", "指令", "能说什么"],
 };
 
 function includesAny(normalized: string, phrases: string[]): boolean {

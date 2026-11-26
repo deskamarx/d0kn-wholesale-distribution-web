@@ -12,6 +12,10 @@
           document.documentElement.dataset.theme = dark ? "dark" : "light";
           var themeColor = document.querySelector('meta[name="theme-color"]');
           if (themeColor) themeColor.setAttribute("content", dark ? "#080d1c" : "#14245c");
+          var prefs = JSON.parse(localStorage.getItem("d0kn-distribution-preferences-v1") || "{}");
+          document.documentElement.dataset.accent = ["indigo", "violet", "teal", "amber", "rose"].indexOf(prefs.accent) >= 0 ? prefs.accent : "indigo";
+          document.documentElement.dataset.density = prefs.density === "compact" ? "compact" : "relaxed";
+          document.documentElement.dataset.fontScale = ["small", "normal", "large"].indexOf(prefs.fontScale) >= 0 ? prefs.fontScale : "normal";
         } catch (error) {
           document.documentElement.dataset.theme = "light";
         }

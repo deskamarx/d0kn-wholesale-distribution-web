@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { setFormatLanguage } from "./lib/format";
 import { bnExtra, zhExtra } from "./i18n-extra";
 import { voiceBn, voiceZh } from "./i18n-voice";
+import { phase1Bn, phase1Zh } from "./i18n-phase1";
 
 export type Language = "en" | "bn" | "zh";
 
@@ -323,6 +324,7 @@ const bn: Record<string, string> = {
   "Continue monitoring the command center for new signals.": "নতুন সংকেতের জন্য কমান্ড সেন্টার পর্যবেক্ষণ চালিয়ে যান।",
   ...bnExtra,
   ...voiceBn,
+  ...phase1Bn,
 };
 
 const zh: Record<string, string> = {
@@ -631,6 +633,7 @@ const zh: Record<string, string> = {
   "Continue monitoring the command center for new signals.": "请继续通过指挥中心监控新信号。",
   ...zhExtra,
   ...voiceZh,
+  ...phase1Zh,
 };
 
 const dictionaries: Record<Language, Record<string, string>> = { en, bn, zh };
